@@ -404,6 +404,11 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
       <button class="btn btn-secondary" onclick="exportPraticiens()">CSV praticiens</button>
       <button class="btn btn-secondary" onclick="exportFullBackup()">Sauvegarde complÃ¨te JSON</button>
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn btn-gold" onclick="copySyncCode()">Copier code synchro mobile</button>
+      <button class="btn btn-secondary" onclick="pasteSyncCode()">Coller code synchro mobile</button>
+      <button class="btn btn-danger" onclick="resetAllData()">Remise Ã  zÃ©ro complÃ¨te</button>
+    </div>
     <div id="exp-ok" style="display:none;margin-top:10px" class="alert alert-ok"></div>
   </div>
   <div class="card" id="exp-summary">
@@ -641,13 +646,35 @@ function fixMojibakeText(s){
     if(score(recoded)<score(out))out=recoded;else break;
   }
 
-  return out
+  out=out
     .replace(/\u001d/g,'—')
-    .replace(/�+/g,'')
+    .replace(/�+/g,'�')
     .replace(/â€”/g,'—').replace(/â€“/g,'–').replace(/â€¦/g,'…').replace(/â€¢/g,'•')
     .replace(/â†’/g,'→').replace(/âœ•/g,'✕').replace(/â¬†/g,'⬆')
     .replace(/Â·/g,'·').replace(/Â°/g,'°').replace(/Â /g,' ')
     .trimEnd();
+
+  const hardMap=[
+    ['SantÃ©','Santé'],['mÃ©dical','médical'],['DÃ©poser','Déposer'],['DonnÃ©es','Données'],['DerniÃ¨res','Dernières'],
+    ['mÃ©dicaments','médicaments'],['NumÃ©ro','Numéro'],['TÃ©lÃ©phone','Téléphone'],['rÃ©fÃ©rence','référence'],
+    ['sÃ©curitÃ©','sécurité'],['santÃ©','santé'],['rÃ©sumÃ©','résumé'],['gÃ©nÃ©rales','générales'],['PÃ©riode','Période'],
+    ['CatÃ©gorie','Catégorie'],['TÃ©lÃ©charger','Télécharger'],['complÃ¨te','complète'],['RÃ©capitulatif','Récapitulatif'],
+    ['SpÃ©cialitÃ©','Spécialité'],['expirÃ©e','expirée'],['ValiditÃ©','Validité'],['AssurÃ©','Assuré'],['RÃ©f','Réf'],
+    ['gÃ©nÃ©rÃ©','généré'],['configurÃ©s','configurés'],['caractÃ¨res','caractères'],['dÃ©tectÃ©s','détectés'],
+    ['appliquÃ©s','appliqués'],['exportÃ©e','exportée'],['rÃ©sultat','résultat'],['dÃ©pensÃ©s','dépensés'],
+    ['MÃ©decin gÃ©nÃ©raliste','Médecin généraliste'],['SpÃ©cialiste','Spécialiste'],['KinÃ© / ostÃ©o','Kiné / ostéo'],
+    ['En attente SÃ©cu','En attente Sécu'],['RemboursÃ© SÃ©cu','Remboursé Sécu'],['SoldÃ©','Soldé'],
+    ['â€”','—'],['â€¦','…'],['â€¢','•'],['â†’','→'],['â¬†','⬆'],['âŒ•','⌕'],
+    ['Toutes ann�es','Toutes années'],['cat�gories','catégories'],['consomm�','consommé'],['expir�e','expirée'],
+    ['d�pens�','dépensé'],['D�pens�','Dépensé'],['S�cu','Sécu'],['�0vol.','Évol.'],['r�sultat','résultat'],
+    ['entr�es suppl�mentaires','entrées supplémentaires'],['Aucune donn�e','Aucune donnée'],['N�','N°'],
+    ['T�l','Tél'],['R�f','Réf'],['Validit�','Validité'],['g�n�r�','généré'],['Sant�Suivi','SantéSuivi'],
+    ['Acte m�dical','Acte médical'],['� ·',' ·'],['� ','— '],[' � ',' — '],['TIERS PAYANT �','TIERS PAYANT —']
+  ];
+  hardMap.forEach(([from,to])=>{out=out.split(from).join(to);});
+
+  if(out==='�')return '—';
+  return out;
 }
 
 function normalizeCatalogs(){
@@ -671,6 +698,25 @@ function normalizeLoadedEntries(entries){
     });
     return out;
   });
+}
+
+function normalizeGenericDeep(v){
+  if(typeof v==='string')return fixMojibakeText(v);
+  if(Array.isArray(v))return v.map(normalizeGenericDeep);
+  if(v&&typeof v==='object'){
+    const out={};
+    Object.keys(v).forEach(k=>{out[k]=normalizeGenericDeep(v[k]);});
+    return out;
+  }
+  return v;
+}
+
+function normalizeAndPersistStorage(){
+  try{localStorage.setItem(SK,JSON.stringify(dedupeEntries(normalizeLoadedEntries(ld()))));}catch{}
+  try{localStorage.setItem(PK,JSON.stringify(normalizeGenericDeep(lp())));}catch{}
+  try{localStorage.setItem(CFG,JSON.stringify(normalizeGenericDeep(lcfg())));}catch{}
+  try{localStorage.setItem(TPK,JSON.stringify(normalizeGenericDeep(ltp())));}catch{}
+  try{localStorage.setItem(CTK,JSON.stringify(normalizeGenericDeep(lct())));}catch{}
 }
 
 function normalizeUiText(root=document.body){
@@ -795,20 +841,7 @@ function init(){
   setupRealtimeSync();
   startUiTextAutoNormalize();
   normalizeCatalogs();
-  // seed demo data
-  if(!ld().length){
-    const demo=[
-      {id:1,date:'2025-01-15',praticien:'Dr. Martin',categorie:'MÃ©decin gÃ©nÃ©raliste',acte:'Consultation',montant:30,remboursement_secu:16.5,remboursement_mutuelle:11,statut:'SoldÃ©',source:'demo'},
-      {id:2,date:'2025-02-03',praticien:'Dr. LefÃ¨vre',categorie:'SpÃ©cialiste',acte:'Consultation cardio',montant:80,remboursement_secu:28,remboursement_mutuelle:40,statut:'SoldÃ©',source:'demo'},
-      {id:3,date:'2025-02-20',praticien:'Pharmacie du Centre',categorie:'Pharmacie',acte:'MÃ©dicaments',montant:45.8,remboursement_secu:32,remboursement_mutuelle:0,statut:'RemboursÃ© SÃ©cu',source:'demo'},
-      {id:4,date:'2025-03-10',praticien:'Dr. Cazals',categorie:'Dentiste',acte:'DÃ©tartrage',montant:57.5,remboursement_secu:0,remboursement_mutuelle:40,statut:'En attente mutuelle',source:'demo'},
-      {id:5,date:'2025-04-05',praticien:'Cabinet KinÃ© Rodez',categorie:'KinÃ© / ostÃ©o',acte:'SÃ©ance x5',montant:67.5,remboursement_secu:52,remboursement_mutuelle:13,statut:'SoldÃ©',source:'demo'},
-      {id:6,date:'2024-03-12',praticien:'Dr. Martin',categorie:'MÃ©decin gÃ©nÃ©raliste',acte:'Consultation',montant:30,remboursement_secu:16.5,remboursement_mutuelle:11,statut:'SoldÃ©',source:'demo'},
-      {id:7,date:'2024-06-20',praticien:'Dr. Cazals',categorie:'Dentiste',acte:'Couronne',montant:450,remboursement_secu:75,remboursement_mutuelle:200,statut:'SoldÃ©',source:'demo'},
-      {id:8,date:'2024-11-08',praticien:'Pharmacie du Centre',categorie:'Pharmacie',acte:'MÃ©dicaments',montant:38,remboursement_secu:25,remboursement_mutuelle:0,statut:'SoldÃ©',source:'demo'},
-    ];
-    sd(demo);
-  }
+  normalizeAndPersistStorage();
   const existing=ld();
   const cleaned=dedupeEntries(existing);
   if(cleaned.length!==existing.length)sd(cleaned);
@@ -1443,6 +1476,97 @@ function exportPraticiens(){
 function exportFullBackup(){
   const backup={entries:ld(),praticiens:lp(),config:lcfg(),tiers_payant:ltp(),contracts:lct(),exported_at:new Date().toISOString()};
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));a.download=`santesuivi_backup_${today()}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+function showExpOk(msg,isError){
+  const ok=document.getElementById('exp-ok');
+  if(!ok)return;
+  ok.className=`alert ${isError?'alert-danger':'alert-ok'}`;
+  ok.textContent=msg;
+  ok.style.display='flex';
+  setTimeout(()=>ok.style.display='none',4500);
+}
+
+function b64EncodeUtf8(txt){
+  return btoa(unescape(encodeURIComponent(txt)));
+}
+
+function b64DecodeUtf8(b64){
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+function buildSyncPayload(){
+  return{
+    version:1,
+    exported_at:new Date().toISOString(),
+    entries:ld(),
+    praticiens:lp(),
+    config:lcfg(),
+    tiers_payant:ltp(),
+    contracts:lct(),
+  };
+}
+
+function applySyncPayload(payload){
+  const safe=payload&&typeof payload==='object'?payload:{};
+  sd(dedupeEntries(normalizeLoadedEntries(Array.isArray(safe.entries)?safe.entries:[])));
+  sp(normalizeGenericDeep(Array.isArray(safe.praticiens)?safe.praticiens:[]));
+  scfg(normalizeGenericDeep(safe.config&&typeof safe.config==='object'?safe.config:{plafonds:[],seuil_rac_mensuel:200}));
+  stp(normalizeGenericDeep(safe.tiers_payant&&typeof safe.tiers_payant==='object'?safe.tiers_payant:{}));
+  sct(normalizeGenericDeep(Array.isArray(safe.contracts)?safe.contracts:[]));
+  notifyEntriesUpdated();
+  refreshVisibleSections();
+  updateExpYears();
+}
+
+async function copySyncCode(){
+  try{
+    const payload=buildSyncPayload();
+    const code='SSV1.'+b64EncodeUtf8(JSON.stringify(payload));
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(code);
+    }else{
+      const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    }
+    showExpOk('Code de synchro copiÃ©. Collez-le sur mobile dans "Coller code synchro mobile".',false);
+  }catch(err){
+    showExpOk(`Impossible de copier le code synchro : ${err.message}`,true);
+  }
+}
+
+function pasteSyncCode(){
+  const raw=prompt('Collez ici le code de synchro (SSV1....)');
+  if(!raw)return;
+  try{
+    const txt=String(raw).trim();
+    if(!txt.startsWith('SSV1.'))throw new Error('format invalide');
+    const payload=JSON.parse(b64DecodeUtf8(txt.slice(5)));
+    applySyncPayload(payload);
+    showExpOk('Synchro appliquÃ©e avec succÃ¨s sur cet appareil.',false);
+  }catch(err){
+    showExpOk(`Code de synchro invalide : ${err.message}`,true);
+  }
+}
+
+function resetAllData(){
+  const ok=confirm("Cette action va supprimer toutes les donnÃ©es locales (soins, praticiens, carte tiers payant, contrats). Continuer ?");
+  if(!ok)return;
+  try{
+    [SK,PK,CFG,TPK,CTK,ENTRIES_UPDATED_KEY].forEach(k=>localStorage.removeItem(k));
+  }catch{}
+  pendingEntries=[];
+  resetSaisie();
+  renderDashboard();
+  renderTP();
+  renderContracts();
+  renderPlafonds();
+  renderPraticiens();
+  updateExpYears();
+  renderExpSummary();
+  buildPratDatalist();
+  notifyEntriesUpdated();
+  normalizeUiText();
+  showExpOk('Remise Ã  zÃ©ro terminÃ©e. Vous pouvez refaire une saisie propre.',false);
 }
 
 function renderExpSummary(){
