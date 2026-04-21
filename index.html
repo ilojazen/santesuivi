@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SantÃ©Suivi â€” Tableau de bord mÃ©dical</title>
+<title>SantéSuivi — Tableau de bord médical</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -114,7 +114,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 .search-box{position:relative;margin-bottom:1rem}
 .search-box input{width:100%;padding:10px 12px 10px 38px;border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--surface);color:var(--text);outline:none}
 .search-box input:focus{border-color:var(--accent)}
-.search-box::before{content:"âŒ•";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.search-box::before{content:"⌕";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
 
 /* SECTION TABS */
 .subtabs{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap}
@@ -197,7 +197,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 <body>
 
 <nav id="topnav">
-  <div class="tn-logo">SantÃ©<span>Suivi</span></div>
+  <div class="tn-logo">Santé<span>Suivi</span></div>
   <button class="navbtn active" data-page="dashboard" onclick="nav('dashboard',this)">Tableau de bord</button>
   <button class="navbtn" data-page="saisie" onclick="nav('saisie',this)">Saisie</button>
   <button class="navbtn" data-page="analyses" onclick="nav('analyses',this)">Analyses</button>
@@ -215,7 +215,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
   <div class="section-header">
     <div>
       <div class="section-title">Tableau de bord</div>
-      <div class="section-sub" id="db-period-label">2025 Â· toutes catÃ©gories</div>
+      <div class="section-sub" id="db-period-label">2025 · toutes catégories</div>
     </div>
     <div class="period-sel" id="db-period-buttons">
       <button class="pbtn active" onclick="setPeriod('all',this)">Tout</button>
@@ -224,31 +224,31 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
   <div id="db-alerts"></div>
   <div class="metrics-grid" id="db-metrics"></div>
   <div class="card">
-    <div class="card-title">Import de document â€” extraction automatique par IA</div>
+    <div class="card-title">Import de document — extraction automatique par IA</div>
     <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
       <input type="file" id="fileInput" accept="image/*,.pdf" multiple onchange="handleFiles(this.files)">
-      <div style="font-size:28px;margin-bottom:8px;opacity:.4">â¬†</div>
-      <div style="font-weight:500;margin-bottom:4px">DÃ©poser ou cliquer pour importer</div>
-      <div style="font-size:12px;color:var(--text3)">Feuille de soins Â· Remboursement mutuelle Â· Facture praticien</div>
+      <div style="font-size:28px;margin-bottom:8px;opacity:.4">⬆</div>
+      <div style="font-weight:500;margin-bottom:4px">Déposer ou cliquer pour importer</div>
+      <div style="font-size:12px;color:var(--text3)">Feuille de soins · Remboursement mutuelle · Facture praticien</div>
     </div>
-    <div class="ai-proc" id="aiProc"><div class="spinner"></div><span>ChatGPT analyse le documentâ€¦</span></div>
+    <div class="ai-proc" id="aiProc"><div class="spinner"></div><span>ChatGPT analyse le document⬦</span></div>
     <div class="ai-result" id="aiResult">
-      <div style="font-weight:500;font-size:12px;color:var(--accent);margin-bottom:4px">DonnÃ©es extraites â€” vÃ©rifiez avant de confirmer</div>
+      <div style="font-weight:500;font-size:12px;color:var(--accent);margin-bottom:4px">Données extraites — vérifiez avant de confirmer</div>
       <div id="aiFields"></div>
       <button class="btn btn-primary btn-sm" onclick="confirmEntry()" style="align-self:flex-end;margin-top:6px">Confirmer et ajouter</button>
     </div>
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <div class="card-title" style="margin-bottom:0">DerniÃ¨res entrÃ©es</div>
+      <div class="card-title" style="margin-bottom:0">Dernières entrées</div>
       <div class="subtabs">
         <button class="stab active" onclick="switchDbTab('list',this)">Liste</button>
         <button class="stab" onclick="switchDbTab('chart',this)">Graphique</button>
-        <button class="stab" onclick="switchDbTab('cats',this)">CatÃ©gories</button>
+        <button class="stab" onclick="switchDbTab('cats',this)">Catégories</button>
       </div>
     </div>
     <div id="db-tab-list"></div>
-    <div id="db-tab-chart" style="display:none"><div class="chart-wrap" style="height:240px"><canvas id="c-db-main" role="img" aria-label="DÃ©penses mensuelles">.</canvas></div></div>
+    <div id="db-tab-chart" style="display:none"><div class="chart-wrap" style="height:240px"><canvas id="c-db-main" role="img" aria-label="Dépenses mensuelles">.</canvas></div></div>
     <div id="db-tab-cats" style="display:none" id="db-tab-cats"></div>
   </div>
 </div>
@@ -272,24 +272,24 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 <div id="p-saisie" class="page">
   <div class="section-header"><div class="section-title">Saisie rapide</div></div>
   <div class="card">
-    <div class="card-title">Nouvelle entrÃ©e manuelle</div>
+    <div class="card-title">Nouvelle entrée manuelle</div>
     <div class="fg2">
       <div class="field"><label>Date</label><input type="date" id="sm-date"></div>
-      <div class="field"><label>CatÃ©gorie</label><select id="sm-cat"></select></div>
-      <div class="field"><label>Praticien</label><input id="sm-prat" list="sm-prat-list" placeholder="Nomâ€¦"><datalist id="sm-prat-list"></datalist></div>
-      <div class="field"><label>Acte / description</label><input id="sm-acte" placeholder="Consultation, mÃ©dicamentsâ€¦"></div>
-      <div class="field"><label>Montant payÃ© (€)</label><input type="number" id="sm-mnt" placeholder="0.00" min="0" step="0.01" oninput="updateRACPreview()"></div>
-      <div class="field"><label>Remb. SÃ©cu (€)</label><input type="number" id="sm-secu" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
+      <div class="field"><label>Catégorie</label><select id="sm-cat"></select></div>
+      <div class="field"><label>Praticien</label><input id="sm-prat" list="sm-prat-list" placeholder="Nom⬦"><datalist id="sm-prat-list"></datalist></div>
+      <div class="field"><label>Acte / description</label><input id="sm-acte" placeholder="Consultation, médicaments⬦"></div>
+      <div class="field"><label>Montant payé (€)</label><input type="number" id="sm-mnt" placeholder="0.00" min="0" step="0.01" oninput="updateRACPreview()"></div>
+      <div class="field"><label>Remb. Sécu (€)</label><input type="number" id="sm-secu" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
       <div class="field"><label>Remb. mutuelle (€)</label><input type="number" id="sm-mut" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
       <div class="field"><label>Statut</label><select id="sm-stat"></select></div>
     </div>
-    <div class="field"><label>Notes</label><textarea id="sm-notes" placeholder="NumÃ©ro de feuille, observationsâ€¦"></textarea></div>
+    <div class="field"><label>Notes</label><textarea id="sm-notes" placeholder="Numéro de feuille, observations⬦"></textarea></div>
     <div id="sm-rac" style="font-size:12px;color:var(--text3);margin-bottom:12px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="saveSaisie()">Enregistrer</button>
       <button class="btn btn-secondary" onclick="resetSaisie()">Effacer</button>
     </div>
-    <div id="sm-ok" style="display:none;margin-top:10px" class="alert alert-ok">EntrÃ©e ajoutÃ©e avec succÃ¨s !</div>
+    <div id="sm-ok" style="display:none;margin-top:10px" class="alert alert-ok">Entrée ajoutée avec succès !</div>
   </div>
 </div>
 
@@ -338,7 +338,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div class="card-title">Importer une carte tiers payant (image/PDF)</div>
     <div class="upload-zone" id="tpDropZone" onclick="document.getElementById('tpFileInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleTpDrop(event)">
       <input type="file" id="tpFileInput" accept="image/*,.pdf" multiple onchange="handleTpFiles(this.files)">
-      <div style="font-size:28px;margin-bottom:8px;opacity:.4">â¬†</div>
+      <div style="font-size:28px;margin-bottom:8px;opacity:.4">⬆</div>
       <div style="font-weight:500;margin-bottom:4px">Déposer ou cliquer pour importer la carte</div>
       <div style="font-size:12px;color:var(--text3)">Recto/verso carte mutuelle, attestation, PDF</div>
     </div>
@@ -353,16 +353,16 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div class="card-title">Mes informations</div>
     <div class="fg2">
       <div class="field"><label>Nom complet</label><input id="tp-nom" placeholder="DUPONT Jean" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>NÂ° adhÃ©rent</label><input id="tp-adherent" placeholder="000 000 000 000" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>NÂ° de sÃ©curitÃ© sociale</label><input id="tp-nss" placeholder="1 80 01 75 123 456 78" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>Organisme / Mutuelle</label><input id="tp-organisme" placeholder="MGEN, Harmonie, AXAâ€¦" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>Code contrat</label><input id="tp-contrat" placeholder="NumÃ©ro de contrat" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>Date de validitÃ©</label><input type="date" id="tp-validite" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>TÃ©lÃ©phone mutuelle</label><input id="tp-tel" placeholder="0800 xxx xxx" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>AMO (SÃ©cu)</label><input id="tp-amo" placeholder="Caisse d'affiliation" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>N° adhérent</label><input id="tp-adherent" placeholder="000 000 000 000" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>N° de sécurité sociale</label><input id="tp-nss" placeholder="1 80 01 75 123 456 78" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>Organisme / Mutuelle</label><input id="tp-organisme" placeholder="MGEN, Harmonie, AXA⬦" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>Code contrat</label><input id="tp-contrat" placeholder="Numéro de contrat" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>Date de validité</label><input type="date" id="tp-validite" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>Téléphone mutuelle</label><input id="tp-tel" placeholder="0800 xxx xxx" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>AMO (Sécu)</label><input id="tp-amo" placeholder="Caisse d'affiliation" oninput="saveTp();renderTP()"></div>
     </div>
     <div class="field"><label>Garanties (une par ligne)</label><textarea id="tp-garanties" placeholder="Hospitalisation 100%&#10;Optique 200€/an&#10;Dentaire 150%" oninput="saveTp();renderTP()"></textarea></div>
-    <div class="field"><label>QR Code / informations complÃ©mentaires</label><input id="tp-qr" placeholder="Code, URL ou rÃ©fÃ©rence" oninput="saveTp();renderTP()"></div>
+    <div class="field"><label>QR Code / informations complémentaires</label><input id="tp-qr" placeholder="Code, URL ou référence" oninput="saveTp();renderTP()"></div>
   </div>
   <div class="card">
     <div class="card-title">Partager la carte</div>
@@ -377,24 +377,24 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 
 <!-- ============================================================ CONTRAT -->
 <div id="p-contrat" class="page">
-  <div class="section-header"><div class="section-title">Contrat santÃ© & CGV</div></div>
-  <div class="alert alert-info">Versez vos CGV et conditions particuliÃ¨res ici. L'outil en tiendra compte pour calibrer les plafonds, les taux de remboursement attendus et les alertes.</div>
+  <div class="section-header"><div class="section-title">Contrat santé & CGV</div></div>
+  <div class="alert alert-info">Versez vos CGV et conditions particulières ici. L'outil en tiendra compte pour calibrer les plafonds, les taux de remboursement attendus et les alertes.</div>
   <div id="contract-list"></div>
   <div class="card">
     <div class="card-title">Ajouter un document contractuel</div>
     <div class="fg2">
       <div class="field"><label>Type</label>
         <select id="ct-type">
-          <option>Conditions gÃ©nÃ©rales (CGV)</option>
-          <option>Conditions particuliÃ¨res</option>
+          <option>Conditions générales (CGV)</option>
+          <option>Conditions particulières</option>
           <option>Tableau de garanties</option>
           <option>Notice d'information</option>
           <option>Autre</option>
         </select>
       </div>
-      <div class="field"><label>Nom / rÃ©fÃ©rence</label><input id="ct-nom" placeholder="Ex: Contrat Harmonie 2025"></div>
+      <div class="field"><label>Nom / référence</label><input id="ct-nom" placeholder="Ex: Contrat Harmonie 2025"></div>
     </div>
-    <div class="field"><label>Contenu (coller le texte ou rÃ©sumÃ©)</label><textarea id="ct-content" style="min-height:120px" placeholder="Collez ici le texte de vos conditions, tableau de garanties, etc."></textarea></div>
+    <div class="field"><label>Contenu (coller le texte ou résumé)</label><textarea id="ct-content" style="min-height:120px" placeholder="Collez ici le texte de vos conditions, tableau de garanties, etc."></textarea></div>
     <div class="field"><label>Ou importer un fichier texte/PDF</label>
       <input type="file" id="ct-file" accept=".txt,.pdf,.csv" onchange="importContractFile(this)" style="border:none;padding:0;font-size:12px">
     </div>
@@ -405,11 +405,11 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div id="contract-analysis-result"></div>
   </div>
   <div class="card">
-    <div class="card-title">Plafonds configurÃ©s</div>
+    <div class="card-title">Plafonds configurés</div>
     <div id="plafonds-list"></div>
     <div class="card-subtitle" style="margin-top:1rem">Ajouter un plafond manuel</div>
     <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-      <div class="field" style="margin:0;flex:1;min-width:130px"><label>CatÃ©gorie</label><select id="pl-cat"></select></div>
+      <div class="field" style="margin:0;flex:1;min-width:130px"><label>Catégorie</label><select id="pl-cat"></select></div>
       <div class="field" style="margin:0;width:110px"><label>Plafond (€)</label><input type="number" id="pl-mnt" placeholder="500" min="0" step="10"></div>
       <button class="btn btn-primary" onclick="addPlafond()">Ajouter</button>
     </div>
@@ -424,16 +424,16 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 <div id="p-export" class="page">
   <div class="section-header"><div class="section-title">Export & sauvegarde</div></div>
   <div class="card">
-    <div class="card-title">Export CSV â€” entrÃ©es</div>
+    <div class="card-title">Export CSV — entrées</div>
     <div class="fg3">
-      <div class="field"><label>PÃ©riode</label><select id="exp-yr"><option value="all">Toutes annÃ©es</option></select></div>
-      <div class="field"><label>CatÃ©gorie</label><select id="exp-cat"><option value="">Toutes</option></select></div>
+      <div class="field"><label>Période</label><select id="exp-yr"><option value="all">Toutes années</option></select></div>
+      <div class="field"><label>Catégorie</label><select id="exp-cat"><option value="">Toutes</option></select></div>
       <div class="field"><label>Statut</label><select id="exp-stat"><option value="">Tous</option></select></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="exportCSV()">TÃ©lÃ©charger CSV entrÃ©es</button>
+      <button class="btn btn-primary" onclick="exportCSV()">Télécharger CSV entrées</button>
       <button class="btn btn-secondary" onclick="exportPraticiens()">CSV praticiens</button>
-      <button class="btn btn-secondary" onclick="exportFullBackup()">Sauvegarde complÃ¨te JSON</button>
+      <button class="btn btn-secondary" onclick="exportFullBackup()">Sauvegarde complète JSON</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
       <button class="btn btn-gold" onclick="copySyncCode()">Copier code synchro mobile</button>
@@ -441,12 +441,12 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
       <button class="btn btn-danger" onclick="deleteSelectedYear()">Supprimer année sélectionnée</button>
       <button class="btn btn-secondary" onclick="downloadIntegratedSchema()">Télécharger schéma JSON intégré</button>
       <button class="btn btn-secondary" onclick="copyIntegratedSchema()">Copier schéma JSON intégré</button>
-      <button class="btn btn-danger" onclick="resetAllData()">Remise Ã  zÃ©ro complÃ¨te</button>
+      <button class="btn btn-danger" onclick="resetAllData()">Remise à zéro complète</button>
     </div>
     <div id="exp-ok" style="display:none;margin-top:10px" class="alert alert-ok"></div>
   </div>
   <div class="card" id="exp-summary">
-    <div class="card-title">RÃ©capitulatif annuel</div>
+    <div class="card-title">Récapitulatif annuel</div>
     <div id="exp-annual-table"></div>
   </div>
 </div>
@@ -463,11 +463,11 @@ const CFG='config_santesuivi_v1';
 const TPK='tiers_payant_v1';
 const CTK='contracts_v1';
 
-const CATS=['MÃ©decin gÃ©nÃ©raliste','SpÃ©cialiste','Dentiste','Pharmacie','KinÃ© / ostÃ©o','Optique','Hospitalisation','Autre'];
-const STATUTS=['En attente SÃ©cu','RemboursÃ© SÃ©cu','En attente mutuelle','SoldÃ©'];
-const MONTHS=['Jan','FÃ©v','Mar','Avr','Mai','Jun','Jul','AoÃ»','Sep','Oct','Nov','DÃ©c'];
+const CATS=['Médecin généraliste','Spécialiste','Dentiste','Pharmacie','Kiné / ostéo','Optique','Hospitalisation','Autre'];
+const STATUTS=['En attente Sécu','Remboursé Sécu','En attente mutuelle','Soldé'];
+const MONTHS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 const QQ=['T1','T2','T3','T4'];
-const CAT_COLORS={'MÃ©decin gÃ©nÃ©raliste':'#378ADD','SpÃ©cialiste':'#7F77DD','Dentiste':'#D85A30','Pharmacie':'#1D9E75','KinÃ© / ostÃ©o':'#BA7517','Optique':'#D4537E','Hospitalisation':'#E24B4A','Autre':'#888780'};
+const CAT_COLORS={'Médecin généraliste':'#378ADD','Spécialiste':'#7F77DD','Dentiste':'#D85A30','Pharmacie':'#1D9E75','Kiné / ostéo':'#BA7517','Optique':'#D4537E','Hospitalisation':'#E24B4A','Autre':'#888780'};
 const YR_COLORS=['#1A4D3A','#C8A96E','#D85A30','#7F77DD','#378ADD'];
 const AV_COLORS=[['#E8F3EE','#1A4D3A'],['#EDE9FF','#5B21B6'],['#FBF5EA','#8B5B10'],['#EAF1FC','#1A4D8A'],['#FDEEEC','#9B2C2C']];
 const STAT_CLS=['s0','s1','s2','s3'];
@@ -595,7 +595,7 @@ function parseAiJson(raw){
   catch{
     const s=cleaned.indexOf('{');const e=cleaned.lastIndexOf('}');
     if(s>=0&&e>s)return JSON.parse(cleaned.slice(s,e+1));
-    throw new Error('RÃ©ponse IA invalide (JSON non dÃ©tectÃ©).');
+    throw new Error('Réponse IA invalide (JSON non détecté).');
   }
 }
 
@@ -699,7 +699,7 @@ function normalizeExtractedEntry(raw,fileName,fallbackYear){
     date,
     praticien:String(raw?.praticien||'').trim()||'Inconnu',
     categorie:normalizeCategory(raw?.categorie),
-    acte:String(raw?.acte||'').trim()||'Acte m�dical',
+    acte:String(raw?.acte||'').trim()||'Acte mdical',
     montant,
     remboursement_secu:Math.min(secu,montant),
     remboursement_mutuelle:Math.min(mut,Math.max(0,montant-secu)),
@@ -744,12 +744,12 @@ function notifyEntriesUpdated(){
   const stamp=Date.now().toString();
   try{localStorage.setItem(ENTRIES_UPDATED_KEY,stamp);}catch{}
   try{if(syncChannel)syncChannel.postMessage({type:'entries-updated',stamp});}catch{}
-  window.dispatchEvent(new CustomEvent('entries-updated',{detail:{stamp}}));
+  setTimeout(()=>window.dispatchEvent(new CustomEvent('entries-updated',{detail:{stamp}})),0);
 }
 
 function fixMojibakeText(s){
   if(typeof s!=='string'||!s)return s;
-  const score=t=>(String(t).match(/[ÃÂâð�]/g)||[]).length;
+  const score=t=>(String(t).match(/[\u00C3\u00C2\u00E2\u00F0]/g)||[]).length;
   const recodeLatin1=t=>{
     const bytes=Uint8Array.from(String(t),ch=>ch.charCodeAt(0)&0xff);
     return new TextDecoder('utf-8').decode(bytes);
@@ -763,32 +763,15 @@ function fixMojibakeText(s){
 
   out=out
     .replace(/\u001d/g,'—')
-    .replace(/�+/g,'�')
-    .replace(/â€”/g,'—').replace(/â€“/g,'–').replace(/â€¦/g,'…').replace(/â€¢/g,'•')
-    .replace(/â†’/g,'→').replace(/âœ•/g,'✕').replace(/â¬†/g,'⬆')
-    .replace(/Â·/g,'·').replace(/Â°/g,'°').replace(/Â /g,' ')
-    .trimEnd();
+    .replace(/\uFFFD+/g,'')
+    .replace(/\u00C3\u00A0/g,'à')
+    .replace(/⬦/g,'…')
+    .replace(/⬢/g,'•')
+    .replace(/Tl\./g,'Tél.')
+    .replace(/Tl /g,'Tél ')
+    .replace(/Rf/g,'Réf')
+    .replace(/Validit/g,'Validité');
 
-  const hardMap=[
-    ['SantÃ©','Santé'],['mÃ©dical','médical'],['DÃ©poser','Déposer'],['DonnÃ©es','Données'],['DerniÃ¨res','Dernières'],
-    ['mÃ©dicaments','médicaments'],['NumÃ©ro','Numéro'],['TÃ©lÃ©phone','Téléphone'],['rÃ©fÃ©rence','référence'],
-    ['sÃ©curitÃ©','sécurité'],['santÃ©','santé'],['rÃ©sumÃ©','résumé'],['gÃ©nÃ©rales','générales'],['PÃ©riode','Période'],
-    ['CatÃ©gorie','Catégorie'],['TÃ©lÃ©charger','Télécharger'],['complÃ¨te','complète'],['RÃ©capitulatif','Récapitulatif'],
-    ['SpÃ©cialitÃ©','Spécialité'],['expirÃ©e','expirée'],['ValiditÃ©','Validité'],['AssurÃ©','Assuré'],['RÃ©f','Réf'],
-    ['gÃ©nÃ©rÃ©','généré'],['configurÃ©s','configurés'],['caractÃ¨res','caractères'],['dÃ©tectÃ©s','détectés'],
-    ['appliquÃ©s','appliqués'],['exportÃ©e','exportée'],['rÃ©sultat','résultat'],['dÃ©pensÃ©s','dépensés'],
-    ['MÃ©decin gÃ©nÃ©raliste','Médecin généraliste'],['SpÃ©cialiste','Spécialiste'],['KinÃ© / ostÃ©o','Kiné / ostéo'],
-    ['En attente SÃ©cu','En attente Sécu'],['RemboursÃ© SÃ©cu','Remboursé Sécu'],['SoldÃ©','Soldé'],
-    ['â€”','—'],['â€¦','…'],['â€¢','•'],['â†’','→'],['â¬†','⬆'],['âŒ•','⌕'],
-    ['Toutes ann�es','Toutes années'],['cat�gories','catégories'],['consomm�','consommé'],['expir�e','expirée'],
-    ['d�pens�','dépensé'],['D�pens�','Dépensé'],['S�cu','Sécu'],['�0vol.','Évol.'],['r�sultat','résultat'],
-    ['entr�es suppl�mentaires','entrées supplémentaires'],['Aucune donn�e','Aucune donnée'],['N�','N°'],
-    ['T�l','Tél'],['R�f','Réf'],['Validit�','Validité'],['g�n�r�','généré'],['Sant�Suivi','SantéSuivi'],
-    ['Acte m�dical','Acte médical'],['� ·',' ·'],['� ','— '],[' � ',' — '],['TIERS PAYANT �','TIERS PAYANT —']
-  ];
-  hardMap.forEach(([from,to])=>{out=out.split(from).join(to);});
-
-  if(out==='�')return '—';
   return out;
 }
 
@@ -920,7 +903,31 @@ function refreshVisibleSections(){
   if(active==='p-tiers')renderTP();
   if(active==='p-contrat'){renderContracts();renderPlafonds();}
   if(active==='p-export'){updateExpYears();renderExpSummary();}
-  normalizeUiText();
+  scheduleUiTextNormalize();
+}
+
+function scheduleRefreshVisibleSections(){
+  if(refreshScheduled)return;
+  refreshScheduled=true;
+  requestAnimationFrame(()=>{
+    refreshScheduled=false;
+    refreshVisibleSections();
+    flashRealtimePulse();
+  });
+}
+
+function scheduleUiTextNormalize(){
+  if(uiNormalizeScheduled)return;
+  uiNormalizeScheduled=true;
+  const run=()=>{
+    uiNormalizeScheduled=false;
+    normalizeUiText();
+  };
+  if('requestIdleCallback' in window){
+    requestIdleCallback(run,{timeout:1200});
+  }else{
+    setTimeout(run,300);
+  }
 }
 
 function setupRealtimeSync(){
@@ -932,22 +939,19 @@ function setupRealtimeSync(){
       syncChannel=new BroadcastChannel(SYNC_CHANNEL_NAME);
       syncChannel.onmessage=(ev)=>{
         if(ev?.data?.type==='entries-updated'){
-          refreshVisibleSections();
-          flashRealtimePulse();
+          scheduleRefreshVisibleSections();
         }
       };
     }
   }catch{}
 
   window.addEventListener('entries-updated',()=>{
-    refreshVisibleSections();
-    flashRealtimePulse();
+    scheduleRefreshVisibleSections();
   });
 
   window.addEventListener('storage',(ev)=>{
     if(ev.key===SK||ev.key===ENTRIES_UPDATED_KEY){
-      refreshVisibleSections();
-      flashRealtimePulse();
+      scheduleRefreshVisibleSections();
     }
   });
 }
@@ -975,6 +979,8 @@ let currentPeriod=yrNow();
 let anSubview='comparaison';
 let anPeriod='all';
 let searchCatFilter=null;
+let refreshScheduled=false;
+let uiNormalizeScheduled=false;
 let currentDetailEntryId=null;
 
 // ============================================================
@@ -1046,7 +1052,7 @@ function setPeriod(p,btn){
     document.querySelectorAll('#db-period-buttons .pbtn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   }
-  document.getElementById('db-period-label').textContent=(p==='all'?'Toutes ann�es':p)+' � toutes cat�gories';
+  document.getElementById('db-period-label').textContent=(p==='all'?'Toutes années':p)+'  toutes catégories';
   renderDashboard();
 }
 
@@ -1075,18 +1081,18 @@ function renderDashboard(){
   yEntries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0));});
   const racMois=ld().filter(e=>e.date&&e.date.startsWith(yr+'-'+String(mNow()).padStart(2,'0'))).reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
   let alerts='';
-  if(racMois>(cfg.seuil_rac_mensuel||200))alerts+=`<div class="alert alert-warn">RAC ce mois : ${fmt(racMois)} â€” seuil de ${fmt(cfg.seuil_rac_mensuel||200)} dÃ©passÃ©</div>`;
-  (cfg.plafonds||[]).forEach(p=>{const c=bycat[p.categorie]||0;const pct=p.montant>0?c/p.montant*100:0;if(pct>=90)alerts+=`<div class="alert alert-danger">Plafond ${p.categorie} : ${pct.toFixed(0)}% consomm� (${fmt(c)}/${fmt(p.montant)})</div>`;else if(pct>=70)alerts+=`<div class="alert alert-warn">Plafond ${p.categorie} : ${pct.toFixed(0)}% consomm�</div>`;});
+  if(racMois>(cfg.seuil_rac_mensuel||200))alerts+=`<div class="alert alert-warn">RAC ce mois : ${fmt(racMois)} — seuil de ${fmt(cfg.seuil_rac_mensuel||200)} dépassé</div>`;
+  (cfg.plafonds||[]).forEach(p=>{const c=bycat[p.categorie]||0;const pct=p.montant>0?c/p.montant*100:0;if(pct>=90)alerts+=`<div class="alert alert-danger">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommé (${fmt(c)}/${fmt(p.montant)})</div>`;else if(pct>=70)alerts+=`<div class="alert alert-warn">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommé</div>`;});
   // tp validity
   const tp=ltp();
-  if(tp.validite){const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));if(diff<30&&diff>=0)alerts+=`<div class="alert alert-warn">Carte tiers payant expire dans ${diff} jour${diff>1?'s':''}</div>`;else if(diff<0)alerts+=`<div class="alert alert-danger">Carte tiers payant expir�e depuis ${-diff} jour${-diff>1?'s':''}</div>`;}
+  if(tp.validite){const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));if(diff<30&&diff>=0)alerts+=`<div class="alert alert-warn">Carte tiers payant expire dans ${diff} jour${diff>1?'s':''}</div>`;else if(diff<0)alerts+=`<div class="alert alert-danger">Carte tiers payant expirée depuis ${-diff} jour${-diff>1?'s':''}</div>`;}
   document.getElementById('db-alerts').innerHTML=alerts;
   // metrics
   document.getElementById('db-metrics').innerHTML=`
-    <div class="mc"><div class="mc-label">Total d�pens�</div><div class="mc-val">${fmts(m.total)}</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
-    <div class="mc"><div class="mc-label">Remb. S�cu</div><div class="mc-val pos">${fmts(m.secu)}</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
+    <div class="mc"><div class="mc-label">Total dépensé</div><div class="mc-val">${fmts(m.total)}</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
+    <div class="mc"><div class="mc-label">Remb. Sécu</div><div class="mc-val pos">${fmts(m.secu)}</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
     <div class="mc"><div class="mc-label">Remb. mutuelle</div><div class="mc-val pos">${fmts(m.mut)}</div><div class="mc-sub">${m.total>0?(m.mut/m.total*100).toFixed(0):0}%</div></div>
-    <div class="mc"><div class="mc-label">Reste � charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)}</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
+    <div class="mc"><div class="mc-label">Reste  charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)}</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
   renderDbTab('list');
 }
 
@@ -1102,28 +1108,28 @@ function switchDbTab(tab,btn){
 function renderDbTab(tab){
   const entries=filterPeriod(ld()).slice().reverse();
   if(tab==='list'){
-    if(!entries.length){document.getElementById('db-tab-list').innerHTML='<div class="empty-state"><div class="empty-icon">ðŸ“‹</div>Aucune entrÃ©e â€” importez votre premier document</div>';return;}
+    if(!entries.length){document.getElementById('db-tab-list').innerHTML='<div class="empty-state"><div class="empty-icon">📋</div>Aucune entrée — importez votre premier document</div>';return;}
     const rows=entries.slice(0,20).map(e=>{
       const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);
-      const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');
-      return`<tr><td style="color:var(--text3)">${e.date||'�'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'�'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente S�cu'}</span></td><td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openEntryDetail(${e.id})">Détail</button><button class="btn btn-danger btn-sm" onclick="deleteEntryById(${e.id})">Suppr.</button></div></td></tr>`;
+      const si=STATUTS.indexOf(e.statut||'En attente Sécu');
+      return`<tr><td style="color:var(--text3)">${e.date||'?'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'?'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td><td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openEntryDetail(${e.id})">Détail</button><button class="btn btn-danger btn-sm" onclick="deleteEntryById(${e.id})">Suppr.</button></div></td></tr>`;
     }).join('');
-    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th><th class="r">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entr�es suppl�mentaires</div>`:''}`;
+    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th><th class="r">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entrées supplémentaires</div>`:''}`;
   }
   if(tab==='chart'){
     const byM=Array(12).fill(0).map(()=>({d:0,r:0}));
     entries.forEach(e=>{if(!e.date)return;const m=parseInt(e.date.split('-')[1])-1;if(m>=0&&m<12){byM[m].d+=(+e.montant||0);byM[m].r+=(+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0);}});
     if(charts['db-main']){charts['db-main'].destroy();}
-    setTimeout(()=>{charts['db-main']=new Chart(document.getElementById('c-db-main'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'DÃ©pensÃ©',data:byM.map(m=>+m.d.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3},{label:'RemboursÃ©',data:byM.map(m=>+m.r.toFixed(2)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+    setTimeout(()=>{charts['db-main']=new Chart(document.getElementById('c-db-main'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'Dépensé',data:byM.map(m=>+m.d.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3},{label:'Remboursé',data:byM.map(m=>+m.r.toFixed(2)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
   }
   if(tab==='cats'){
     const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';if(!bycat[k])bycat[k]={t:0,s:0,mu:0};bycat[k].t+=(+e.montant||0);bycat[k].s+=(+e.remboursement_secu||0);bycat[k].mu+=(+e.remboursement_mutuelle||0);});
     const grand=Object.values(bycat).reduce((s,v)=>s+v.t,0);
     const html=Object.entries(bycat).sort((a,b)=>b[1].t-a[1].t).map(([cat,v])=>{
       const pct=grand>0?v.t/grand*100:0;const rac=v.t-v.s-v.mu;const col=CAT_COLORS[cat]||'#888';
-      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>S�cu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
+      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>Sécu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
     }).join('');
-    document.getElementById('db-tab-cats').innerHTML=html||'<div class="empty-state">Aucune donnÃ©e</div>';
+    document.getElementById('db-tab-cats').innerHTML=html||'<div class="empty-state">Aucune donnée</div>';
   }
 }
 
@@ -1138,15 +1144,15 @@ async function analyzeSingleDoc(file,ctContent){
   const b64=await toB64(file);
   const mt=file.type||'image/jpeg';
   const isImg=mt.startsWith('image/');
-  const prompt=`Tu es un extracteur de remboursements santÃ© franÃ§ais.
+  const prompt=`Tu es un extracteur de remboursements santé français.
 ${ctContent?`Contexte contrat:\n${ctContent}\n\n`:''}
 Lis le document et retourne UNIQUEMENT un JSON valide (sans markdown) au format:
-{"document_year":"YYYY ou null","entries":[{"date":"YYYY-MM-DD","praticien":"","categorie":"${CATS.join('|')}","acte":"","montant":0,"remboursement_secu":0,"remboursement_mutuelle":0,"statut":"En attente SÃ©cu","notes":""}]}
-RÃ¨gles:
+{"document_year":"YYYY ou null","entries":[{"date":"YYYY-MM-DD","praticien":"","categorie":"${CATS.join('|')}","acte":"","montant":0,"remboursement_secu":0,"remboursement_mutuelle":0,"statut":"En attente Sécu","notes":""}]}
+Règles:
 - Extraire toutes les lignes de soins/remboursements primordiales.
-- AnnÃ©es autorisÃ©es: de ${MIN_COVERAGE_YEAR} Ã  ${new Date().getFullYear()}.
+- Années autorisées: de ${MIN_COVERAGE_YEAR} à ${new Date().getFullYear()}.
 - Si jour inconnu: mettre le premier jour du mois; si mois inconnu: 01-01.
-- montants numÃ©riques uniquement (pas de symbole).
+- montants numériques uniquement (pas de symbole).
 - Si aucune ligne exploitable: {"document_year":null,"entries":[]}.`;
   const msgContent=isImg?[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}];
   const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:2200,messages:[{role:'user',content:msgContent}]})});
@@ -1171,14 +1177,14 @@ async function handleFiles(fileList){
       extracted=extracted.concat(rows);
     }
     pendingEntries=dedupeEntries(extracted.map(applyIntegratedSchemaToEntry)).filter(e=>isCoverageYear(String(e.date||e.date_soin||'').slice(0,4)));
-    if(!pendingEntries.length)throw new Error(`Aucune donnÃ©e exploitable dÃ©tectÃ©e (${MIN_COVERAGE_YEAR} â†’ ${new Date().getFullYear()}).`);
+    if(!pendingEntries.length)throw new Error(`Aucune donnée exploitable détectée (${MIN_COVERAGE_YEAR} → ${new Date().getFullYear()}).`);
     const years=[...new Set(pendingEntries.map(e=>e.date.slice(0,4)))].sort();
-    const preview=pendingEntries.slice(0,8).map(e=>`<div class="ai-field"><span class="ai-field-label">${e.date} â€¢ ${e.praticien}</span><span style="font-weight:500">${fmt(e.montant)}</span></div>`).join('');
+    const preview=pendingEntries.slice(0,8).map(e=>`<div class="ai-field"><span class="ai-field-label">${e.date} ⬢ ${e.praticien}</span><span style="font-weight:500">${fmt(e.montant)}</span></div>`).join('');
     document.getElementById('aiFields').innerHTML=`
       <div class="ai-field"><span class="ai-field-label">Lignes extraites</span><span style="font-weight:700">${pendingEntries.length}</span></div>
-      <div class="ai-field"><span class="ai-field-label">PÃ©riode couverte</span><span style="font-weight:500">${years[0]} â†’ ${years[years.length-1]}</span></div>
+      <div class="ai-field"><span class="ai-field-label">Période couverte</span><span style="font-weight:500">${years[0]} → ${years[years.length-1]}</span></div>
       ${preview}
-      ${pendingEntries.length>8?`<div style="font-size:11px;color:var(--text3)">+${pendingEntries.length-8} lignes suppl�mentaires</div>`:''}
+      ${pendingEntries.length>8?`<div style="font-size:11px;color:var(--text3)">+${pendingEntries.length-8} lignes supplmentaires</div>`:''}
     `;
     document.getElementById('aiProc').classList.remove('on');
     document.getElementById('aiResult').classList.add('on');
@@ -1188,7 +1194,7 @@ async function handleFiles(fileList){
     document.getElementById('aiResult').classList.add('on');
     pendingEntries=[];
   }finally{
-    document.querySelector('#aiProc span').textContent='ChatGPT analyse le documentâ€¦';
+    document.querySelector('#aiProc span').textContent='ChatGPT analyse le document⬦';
     const fi=document.getElementById('fileInput');
     if(fi)fi.value='';
   }
@@ -1213,7 +1219,7 @@ function cycleStatutById(id){
   const idx=data.findIndex(e=>e.id===id);
   if(idx<0)return;
   const cycle=STATUTS;
-  const ci=cycle.indexOf(data[idx].statut||'En attente SÃ©cu');
+  const ci=cycle.indexOf(data[idx].statut||'En attente Sécu');
   data[idx].statut=cycle[(ci+1)%cycle.length];
   sd(data);renderDashboard();
   if(anSubview==='remboursements')renderAnalyse('remboursements');
@@ -1231,7 +1237,7 @@ function updateRACPreview(){
   const m=parseFloat(document.getElementById('sm-mnt').value)||0;
   const s=parseFloat(document.getElementById('sm-secu').value)||0;
   const mu=parseFloat(document.getElementById('sm-mut').value)||0;
-  document.getElementById('sm-rac').textContent=`Reste Ã  charge : ${fmt(m-s-mu)}`;
+  document.getElementById('sm-rac').textContent=`Reste à charge : ${fmt(m-s-mu)}`;
 }
 
 function saveSaisie(){
@@ -1289,19 +1295,19 @@ function filterAn(entries){
 
 function rComparaison(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-comparaison');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e disponible</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée disponible</div>';return;}
   const byY={};years.forEach(y=>{byY[y]=entries.filter(e=>e.date&&e.date.startsWith(y));});
   const rows=years.map((y,i)=>{
     const s=computeMetrics(byY[y]);const rac=s.total-s.secu-s.mut;const prev=years[i+1];const d=prev?delta(s.total,computeMetrics(byY[prev]).total):null;
     return`<tr><td style="font-weight:500">${y}</td><td class="r mono">${fmt(s.total)}</td><td class="r mono" style="color:var(--accent)">${fmt(s.secu)}</td><td class="r mono" style="color:var(--accent)">${fmt(s.mut)}</td><td class="r mono" style="color:${rac>300?'var(--warn)':'var(--text)'}">${fmt(rac)}</td><td class="r">${s.taux.toFixed(0)}%</td><td class="r">${deltaHtml(d)}</td></tr>`;
   }).join('');
-  el.innerHTML=`<div class="card"><div class="card-title">Comparaison annuelle</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>AnnÃ©e</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th><th class="r">vs N-1</th></tr></thead><tbody>${rows}</tbody></table></div></div>
-  <div class="card"><div class="card-title">Ã‰volution annuelle</div><div class="chart-wrap" style="height:240px"><canvas id="c-comp" role="img" aria-label="Comparaison annuelle">.</canvas></div></div>
-  <div class="card"><div class="card-title">RÃ©partition par catÃ©gorie (empilÃ©e)</div><div class="chart-wrap" style="height:${Math.max(180,years.length*60+80)}px"><canvas id="c-comp-cat" role="img" aria-label="CatÃ©gories par annÃ©e">.</canvas></div></div>`;
+  el.innerHTML=`<div class="card"><div class="card-title">Comparaison annuelle</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Année</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th><th class="r">vs N-1</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card"><div class="card-title">Évolution annuelle</div><div class="chart-wrap" style="height:240px"><canvas id="c-comp" role="img" aria-label="Comparaison annuelle">.</canvas></div></div>
+  <div class="card"><div class="card-title">Répartition par catégorie (empilée)</div><div class="chart-wrap" style="height:${Math.max(180,years.length*60+80)}px"><canvas id="c-comp-cat" role="img" aria-label="Catégories par année">.</canvas></div></div>`;
   setTimeout(()=>{
     if(charts['comp']){charts['comp'].destroy();}
     const yrS=[...years].reverse();
-    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'DÃ©pensÃ©',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.total-s.secu-s.mut).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
+    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'Dépensé',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.total-s.secu-s.mut).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
     if(charts['comp-cat']){charts['comp-cat'].destroy();}
     const catDS=CATS.map(cat=>({label:cat,data:yrS.map(y=>+(byY[y].filter(e=>e.categorie===cat).reduce((s,e)=>s+(+e.montant||0),0)).toFixed(2)),backgroundColor:CAT_COLORS[cat]+'AA',borderRadius:2})).filter(d=>d.data.some(v=>v>0));
     charts['comp-cat']=new Chart(document.getElementById('c-comp-cat'),{type:'bar',data:{labels:yrS,datasets:catDS},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},color:'#9E9B96',boxWidth:10,padding:6}}},scales:{x:{stacked:true,ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{stacked:true,ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
@@ -1310,38 +1316,38 @@ function rComparaison(){
 
 function rMensuel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-mensuel');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
   const refY=anPeriod==='all'?years[0]:anPeriod;
   const compY=years[years.indexOf(refY)+1]||null;
   const build=y=>{const m=Array(12).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const mi=parseInt(e.date.split('-')[1])-1;if(mi>=0&&mi<12){m[mi].t+=(+e.montant||0);m[mi].s+=(+e.remboursement_secu||0);m[mi].mu+=(+e.remboursement_mutuelle||0);}});return m;};
   const cur=build(refY);const prev=compY?build(compY):null;
-  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'�'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'�'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'�'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'�'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'�'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'?'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'?'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'?'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'?'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'?'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map((y,i)=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('mensuel')">${y}</button>`).join('')}</div>
-  <div class="card"><div class="card-title">Synth�se mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">D�pens�</th><th class="r">S�cu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">�0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
-  <div class="card"><div class="card-title">D�penses mensuelles${compY?' � '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="D�penses mensuelles">.</canvas></div></div>`;
+  <div class="card"><div class="card-title">Synthse mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card"><div class="card-title">Dpenses mensuelles${compY?' ? '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="Dpenses mensuelles">.</canvas></div></div>`;
   setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rTrimestriel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-trimestriel');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
   const refY=anPeriod==='all'?years[0]:anPeriod;const compY=years[years.indexOf(refY)+1]||null;
   const buildQ=y=>{const q=Array(4).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const m=parseInt(e.date.split('-')[1])-1;const qi=Math.floor(m/3);if(qi>=0&&qi<4){q[qi].t+=(+e.montant||0);q[qi].s+=(+e.remboursement_secu||0);q[qi].mu+=(+e.remboursement_mutuelle||0);}});return q;};
   const cur=buildQ(refY);const prev=compY?buildQ(compY):null;
-  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'�'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'�'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'�'}</td><td class="r mono">${c.t>0?fmt(rac):'�'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'�'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'�'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'?'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'?'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'?'}</td><td class="r mono">${c.t>0?fmt(rac):'?'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'?'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'?'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map(y=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('trimestriel')">${y}</button>`).join('')}</div>
-  <div class="card"><div class="card-title">Synth�se trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">D�pens�</th><th class="r">S�cu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">�0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
-  <div class="card"><div class="card-title">DÃ©penses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="DÃ©penses trimestrielles">.</canvas></div></div>`;
+  <div class="card"><div class="card-title">Synthse trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="card"><div class="card-title">Dépenses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="Dépenses trimestrielles">.</canvas></div></div>`;
   setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rAnnuel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-annuel');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
   const summaries=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const bycat={};ye.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+(+e.montant||0);});const top=Object.entries(bycat).sort((a,b)=>b[1]-a[1])[0];return{...s,year:y,rac:s.total-s.secu-s.mut,top};});
   const best=summaries.reduce((a,b)=>b.rac<a.rac?b:a,summaries[0]);
   el.innerHTML=summaries.map((s,i)=>{const prev=summaries[i+1];const d=prev?delta(s.total,prev.total):null;
-    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?` � principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">D�pens�</div><div class="mc-val">${fmts(s.total)}</div></div><div class="mc"><div class="mc-label">S�cu</div><div class="mc-val pos">${fmts(s.secu)}</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)}</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)}</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
+    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?`  principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">Dépensé</div><div class="mc-val">${fmts(s.total)}</div></div><div class="mc"><div class="mc-label">Sécu</div><div class="mc-val pos">${fmts(s.secu)}</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)}</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)}</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
 }
 
 function rPratStats(){
@@ -1349,22 +1355,22 @@ function rPratStats(){
   const byP={};entries.forEach(e=>{const k=e.praticien||'Inconnu';if(!byP[k])byP[k]={t:0,s:0,mu:0,n:0,cat:e.categorie||'Autre',dates:[]};byP[k].t+=(+e.montant||0);byP[k].s+=(+e.remboursement_secu||0);byP[k].mu+=(+e.remboursement_mutuelle||0);byP[k].n++;if(e.date)byP[k].dates.push(e.date);});
   const sorted=Object.keys(byP).sort((a,b)=>byP[b].t-byP[a].t);
   const rows=sorted.map((p,i)=>{const v=byP[p];const rac=v.t-v.s-v.mu;const taux=v.t>0?(v.s+v.mu)/v.t*100:0;const [abg,atx]=avCol(i);const last=v.dates.sort().pop();
-    return`<div class="data-row"><div class="avatar" style="background:${abg};color:${atx}">${initials(p)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p}</div><div style="font-size:11px;color:var(--text3)">${v.n} visite${v.n>1?'s':''}${last?' � derni�re '+last:''}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(v.t)}</div><div style="font-size:11px;color:${rac>50?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)} � ${taux.toFixed(0)}%</div></div></div>`;}).join('');
-  el.innerHTML=`<div class="card"><div class="card-title">DÃ©penses par praticien</div>${rows||'<div class="empty-state">Aucune donnÃ©e</div>'}</div>`;
+    return`<div class="data-row"><div class="avatar" style="background:${abg};color:${atx}">${initials(p)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p}</div><div style="font-size:11px;color:var(--text3)">${v.n} visite${v.n>1?'s':''}${last?'  dernire '+last:''}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(v.t)}</div><div style="font-size:11px;color:${rac>50?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}  ${taux.toFixed(0)}%</div></div></div>`;}).join('');
+  el.innerHTML=`<div class="card"><div class="card-title">Dépenses par praticien</div>${rows||'<div class="empty-state">Aucune donnée</div>'}</div>`;
 }
 
 function rRemboursements(){
   const entries=ld();const el=document.getElementById('an-remboursements');
-  const pending=entries.filter(e=>e.statut!=='SoldÃ©').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const pending=entries.filter(e=>e.statut!=='Soldé').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const montantAtt=pending.reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
-  const rows=pending.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente S�cu');return`<tr><td style="color:var(--text3)">${e.date||'�'}</td><td>${e.praticien||'�'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente S�cu'}</span></td></tr>`;}).join('');
-  el.innerHTML=`<div class="metrics-grid"><div class="mc"><div class="mc-label">En attente</div><div class="mc-val warn">${pending.length}</div></div><div class="mc"><div class="mc-label">Montant att.</div><div class="mc-val ${montantAtt>100?'warn':''}">${fmt(montantAtt)}</div></div><div class="mc"><div class="mc-label">Sold�s</div><div class="mc-val pos">${entries.filter(e=>e.statut==='Sold�').length}</div></div></div>
+  const rows=pending.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente Sécu');return`<tr><td style="color:var(--text3)">${e.date||'?'}</td><td>${e.praticien||'?'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td></tr>`;}).join('');
+  el.innerHTML=`<div class="metrics-grid"><div class="mc"><div class="mc-label">En attente</div><div class="mc-val warn">${pending.length}</div></div><div class="mc"><div class="mc-label">Montant att.</div><div class="mc-val ${montantAtt>100?'warn':''}">${fmt(montantAtt)}</div></div><div class="mc"><div class="mc-label">Solds</div><div class="mc-val pos">${entries.filter(e=>e.statut==='Sold').length}</div></div></div>
   <div class="card"><div class="card-title">En attente de remboursement</div>${pending.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th class="r">Montant</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div><div style="font-size:11px;color:var(--text3);margin-top:8px">Cliquez sur le statut pour le faire avancer</div>`:'<div class="empty-state">Aucun remboursement en attente</div>'}</div>`;
 }
 
 function rRecherche(){
   const el=document.getElementById('an-recherche');
-  el.innerHTML=`<div class="search-box"><input type="text" id="srch" placeholder="Praticien, acte, catÃ©gorie, notes, dateâ€¦" oninput="doSearch(this.value)"></div>
+  el.innerHTML=`<div class="search-box"><input type="text" id="srch" placeholder="Praticien, acte, catégorie, notes, date⬦" oninput="doSearch(this.value)"></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem" id="srch-filters">
     <button class="stab active" onclick="setSrchCat(null,this)">Tout</button>
     ${CATS.map(c=>`<button class="stab" onclick="setSrchCat('${c}',this)">${c}</button>`).join('')}
@@ -1379,10 +1385,10 @@ function doSearch(q){
   const entries=ld();const term=q.toLowerCase().trim();
   let res=entries.filter(e=>(!term||(e.praticien||'').toLowerCase().includes(term)||(e.acte||'').toLowerCase().includes(term)||(e.categorie||'').toLowerCase().includes(term)||(e.notes||'').toLowerCase().includes(term)||(e.date||'').includes(term))&&(!searchCatFilter||e.categorie===searchCatFilter)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const el=document.getElementById('srch-results');if(!el)return;
-  if(!res.length){el.innerHTML='<div class="empty-state">Aucun rÃ©sultat</div>';return;}
-  const rows=res.slice(0,50).map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');
-    return`<div class="data-row" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">${e.praticien||'�'}</span><span style="font-size:11px;color:var(--text3)">${e.date||''}</span><span class="status-pill ${STAT_CLS[si>=0?si:0]}">${e.statut||'En attente S�cu'}</span></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${e.acte||''} ${e.notes?'� '+e.notes:''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-weight:500;font-variant-numeric:tabular-nums">${fmt(+e.montant||0)}</div><div style="font-size:11px;color:${rac>0?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}</div></div></div>`;}).join('');
-  el.innerHTML=`<div class="card"><div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">${res.length} r�sultat${res.length>1?'s':''}</div>${rows}</div>`;
+  if(!res.length){el.innerHTML='<div class="empty-state">Aucun résultat</div>';return;}
+  const rows=res.slice(0,50).map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente Sécu');
+    return`<div class="data-row" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">${e.praticien||'?'}</span><span style="font-size:11px;color:var(--text3)">${e.date||''}</span><span class="status-pill ${STAT_CLS[si>=0?si:0]}">${e.statut||'En attente Sécu'}</span></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${e.acte||''} ${e.notes?' '+e.notes:''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-weight:500;font-variant-numeric:tabular-nums">${fmt(+e.montant||0)}</div><div style="font-size:11px;color:${rac>0?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}</div></div></div>`;}).join('');
+  el.innerHTML=`<div class="card"><div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">${res.length} résultat${res.length>1?'s':''}</div>${rows}</div>`;
 }
 
 // ============================================================
@@ -1391,9 +1397,9 @@ function doSearch(q){
 function renderPraticiens(){
   const prats=lp();const entries=ld();const el=document.getElementById('prat-list');
   const byP={};entries.forEach(e=>{const k=e.praticien||'';if(k)byP[k]=(byP[k]||0)+(+e.montant||0);});
-  if(!prats.length){el.innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">ðŸ‘¨â€âš•ï¸</div>Aucun praticien â€” cliquez sur + Ajouter</div></div>';return;}
+  if(!prats.length){el.innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">👨‍⚕️</div>Aucun praticien — cliquez sur + Ajouter</div></div>';return;}
   el.innerHTML=prats.map((p,i)=>{const [abg,atx]=avCol(i);const tot=byP[p.nom]||0;
-    return`<div class="card"><div style="display:flex;align-items:flex-start;gap:12px"><div class="avatar" style="background:${abg};color:${atx};width:44px;height:44px;font-size:14px;margin-top:2px">${initials(p.nom)}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${p.nom}</div><div style="font-size:12px;color:var(--text3)">${p.specialite||''} ${p.ville?'� '+p.ville:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">${p.tel?`<a href="tel:${p.tel}" style="font-size:12px;color:var(--accent)">${p.tel}</a>`:''} ${p.email?`<a href="mailto:${p.email}" style="font-size:12px;color:var(--accent)">${p.email}</a>`:''} ${p.rdv?`<a href="${p.rdv}" style="font-size:12px;color:var(--accent2)">Prendre RDV</a>`:''} ${p.rpps?`<span style="font-size:11px;color:var(--text3)">RPPS ${p.rpps}</span>`:''}</div>${p.notes?`<div style="font-size:12px;color:var(--text2);margin-top:5px;font-style:italic">${p.notes}</div>`:''}</div><div style="text-align:right;flex-shrink:0">${tot>0?`<div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(tot)}</div><div style="font-size:11px;color:var(--text3)">d�pens�s</div>`:''}<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openPratForm(${i})">Modifier</button><button class="btn btn-danger btn-sm" onclick="delPrat(${i})">Suppr.</button></div></div></div></div>`;}).join('');
+    return`<div class="card"><div style="display:flex;align-items:flex-start;gap:12px"><div class="avatar" style="background:${abg};color:${atx};width:44px;height:44px;font-size:14px;margin-top:2px">${initials(p.nom)}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${p.nom}</div><div style="font-size:12px;color:var(--text3)">${p.specialite||''} ${p.ville?' '+p.ville:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">${p.tel?`<a href="tel:${p.tel}" style="font-size:12px;color:var(--accent)">${p.tel}</a>`:''} ${p.email?`<a href="mailto:${p.email}" style="font-size:12px;color:var(--accent)">${p.email}</a>`:''} ${p.rdv?`<a href="${p.rdv}" style="font-size:12px;color:var(--accent2)">Prendre RDV</a>`:''} ${p.rpps?`<span style="font-size:11px;color:var(--text3)">RPPS ${p.rpps}</span>`:''}</div>${p.notes?`<div style="font-size:12px;color:var(--text2);margin-top:5px;font-style:italic">${p.notes}</div>`:''}</div><div style="text-align:right;flex-shrink:0">${tot>0?`<div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(tot)}</div><div style="font-size:11px;color:var(--text3)">dépensés</div>`:''}<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openPratForm(${i})">Modifier</button><button class="btn btn-danger btn-sm" onclick="delPrat(${i})">Suppr.</button></div></div></div></div>`;}).join('');
 }
 
 function openPratForm(idx){
@@ -1401,15 +1407,15 @@ function openPratForm(idx){
   document.getElementById('prat-form-wrap').innerHTML=`<div class="card"><div class="card-title">${idx>=0?'Modifier':'Nouveau'} praticien</div>
     <div class="fg2">
       <div class="field"><label>Nom</label><input id="pf-nom" value="${p.nom||''}" placeholder="Dr. Dupont"></div>
-      <div class="field"><label>SpÃ©cialitÃ©</label><input id="pf-spec" value="${p.specialite||''}" placeholder="Cardiologue"></div>
-      <div class="field"><label>TÃ©lÃ©phone</label><input id="pf-tel" value="${p.tel||''}" placeholder="05 65 xx xx xx"></div>
+      <div class="field"><label>Spécialité</label><input id="pf-spec" value="${p.specialite||''}" placeholder="Cardiologue"></div>
+      <div class="field"><label>Téléphone</label><input id="pf-tel" value="${p.tel||''}" placeholder="05 65 xx xx xx"></div>
       <div class="field"><label>Email</label><input id="pf-email" value="${p.email||''}" placeholder="cabinet@..."></div>
       <div class="field"><label>Adresse</label><input id="pf-adr" value="${p.adresse||''}" placeholder="12 rue de la Paix"></div>
       <div class="field"><label>Ville</label><input id="pf-ville" value="${p.ville||''}" placeholder="Rodez"></div>
       <div class="field"><label>RPPS</label><input id="pf-rpps" value="${p.rpps||''}" placeholder="10 chiffres"></div>
-      <div class="field"><label>Lien RDV (Doctolibâ€¦)</label><input id="pf-rdv" value="${p.rdv||''}" placeholder="https://doctolib.fr/..."></div>
+      <div class="field"><label>Lien RDV (Doctolib⬦)</label><input id="pf-rdv" value="${p.rdv||''}" placeholder="https://doctolib.fr/..."></div>
     </div>
-    <div class="field"><label>Notes</label><textarea id="pf-notes" placeholder="Rappeler avantâ€¦">${p.notes||''}</textarea></div>
+    <div class="field"><label>Notes</label><textarea id="pf-notes" placeholder="Rappeler avant⬦">${p.notes||''}</textarea></div>
     <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePrat(${idx})">Enregistrer</button><button class="btn btn-secondary" onclick="document.getElementById('prat-form-wrap').innerHTML=''">Annuler</button></div>
   </div>`;
   document.getElementById('prat-form-wrap').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -1557,14 +1563,14 @@ function renderTP(){
   const tp=ltp();
   const el=document.getElementById('tp-card-render');
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim());
-  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'�';
+  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'?';
 
   // validity alert
   let tpAlerts='';
   if(tp.validite){
     const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));
-    if(diff<0)tpAlerts=`<div class="alert alert-danger">Carte expir�e depuis ${-diff} jour${-diff>1?'s':''} � renouvelez votre contrat</div>`;
-    else if(diff<30)tpAlerts=`<div class="alert alert-warn">Expire dans ${diff} jour${diff>1?'s':''} � pensez � renouveler</div>`;
+    if(diff<0)tpAlerts=`<div class="alert alert-danger">Carte expirée depuis ${-diff} jour${-diff>1?'s':''} ? renouvelez votre contrat</div>`;
+    else if(diff<30)tpAlerts=`<div class="alert alert-warn">Expire dans ${diff} jour${diff>1?'s':''} ? pensez  renouveler</div>`;
     else tpAlerts=`<div class="alert alert-ok">Carte valide jusqu'au ${validStr}</div>`;
   }
   document.getElementById('tp-alerts').innerHTML=tpAlerts;
@@ -1572,18 +1578,18 @@ function renderTP(){
   el.innerHTML=`<div class="tp-card" id="tp-card-print">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem;position:relative;z-index:1">
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.12em;opacity:.55;margin-bottom:2px">Attestation tiers payant</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;letter-spacing:.01em">${tp.organisme||'Mutuelle'}</div></div>
-      <div style="text-align:right"><div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:.08em">ValiditÃ©</div><div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent2)">${validStr}</div></div>
+      <div style="text-align:right"><div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:.08em">Validité</div><div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent2)">${validStr}</div></div>
     </div>
     <div style="position:relative;z-index:1">
-      <div class="tp-row"><div class="tp-label">Titulaire</div><div class="tp-value">${tp.nom||'â€”'}</div></div>
+      <div class="tp-row"><div class="tp-label">Titulaire</div><div class="tp-value">${tp.nom||'—'}</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-        <div class="tp-row"><div class="tp-label">NÂ° adhÃ©rent</div><div class="tp-value" style="font-size:13px">${tp.adherent||'â€”'}</div></div>
-        <div class="tp-row"><div class="tp-label">NÂ° SS</div><div class="tp-value" style="font-size:13px;word-break:break-all">${tp.nss||'â€”'}</div></div>
+        <div class="tp-row"><div class="tp-label">N° adhérent</div><div class="tp-value" style="font-size:13px">${tp.adherent||'—'}</div></div>
+        <div class="tp-row"><div class="tp-label">N° SS</div><div class="tp-value" style="font-size:13px;word-break:break-all">${tp.nss||'—'}</div></div>
         ${tp.contrat?`<div class="tp-row"><div class="tp-label">Contrat</div><div class="tp-value" style="font-size:12px">${tp.contrat}</div></div>`:''}
-        ${tp.amo?`<div class="tp-row"><div class="tp-label">AMO / S�cu</div><div class="tp-value" style="font-size:12px">${tp.amo}</div></div>`:''}
+        ${tp.amo?`<div class="tp-row"><div class="tp-label">AMO / Sécu</div><div class="tp-value" style="font-size:12px">${tp.amo}</div></div>`:''}
       </div>
       ${garanties.length?`<div class="tp-chips">${garanties.map(g=>`<div class="tp-chip">${g}</div>`).join('')}</div>`:''}
-      ${tp.tel?`<div style="margin-top:.75rem;font-size:11px;opacity:.6">T�l. mutuelle : ${tp.tel}</div>`:''}
+      ${tp.tel?`<div style="margin-top:.75rem;font-size:11px;opacity:.6">Tl. mutuelle : ${tp.tel}</div>`:''}
       ${tp.qr?`<div style="margin-top:.5rem;font-size:11px;opacity:.6;word-break:break-all">${tp.qr}</div>`:''}
     </div>
   </div>`;
@@ -1591,9 +1597,9 @@ function renderTP(){
 
 function printTP(){
   const tp=ltp();
-  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'�';
+  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'?';
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`<li>${g}</li>`).join('');
-  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tiers Payant â€” ${tp.nom||''}</title>
+  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tiers Payant — ${tp.nom||''}</title>
   <style>body{margin:0;padding:20px;font-family:'Helvetica Neue',sans-serif;background:#f4f4f4}
   .card{background:linear-gradient(135deg,#1A4D3A,#0F3328);color:#fff;border-radius:20px;padding:28px;max-width:400px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,.3)}
   .org{font-size:22px;font-weight:700;letter-spacing:.01em;margin-bottom:20px}.sub{font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
@@ -1606,38 +1612,38 @@ function printTP(){
   <body><div class="card">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
     <div><div class="sub">Attestation tiers payant</div><div class="org">${tp.organisme||'Mutuelle'}</div></div>
-    <div style="text-align:right"><div class="sub">ValiditÃ©</div><div style="font-size:14px;font-weight:700;color:#C8A96E">${validStr}</div></div>
+    <div style="text-align:right"><div class="sub">Validité</div><div style="font-size:14px;font-weight:700;color:#C8A96E">${validStr}</div></div>
   </div>
-  <div><div class="sub">Titulaire</div><div class="val big">${tp.nom||'â€”'}</div></div>
+  <div><div class="sub">Titulaire</div><div class="val big">${tp.nom||'—'}</div></div>
   <div class="grid">
-    <div><div class="sub">NÂ° adhÃ©rent</div><div class="val">${tp.adherent||'â€”'}</div></div>
-    <div><div class="sub">NÂ° SÃ©curitÃ© sociale</div><div class="val" style="font-size:12px;word-break:break-all">${tp.nss||'â€”'}</div></div>
+    <div><div class="sub">N° adhérent</div><div class="val">${tp.adherent||'—'}</div></div>
+    <div><div class="sub">N° Sécurité sociale</div><div class="val" style="font-size:12px;word-break:break-all">${tp.nss||'—'}</div></div>
     ${tp.contrat?`<div><div class="sub">Contrat</div><div class="val">${tp.contrat}</div></div>`:''}
-    ${tp.amo?`<div><div class="sub">AMO / S�cu</div><div class="val">${tp.amo}</div></div>`:''}
+    ${tp.amo?`<div><div class="sub">AMO / Sécu</div><div class="val">${tp.amo}</div></div>`:''}
   </div>
   ${garanties?`<div style="margin-top:14px"><div class="sub" style="margin-bottom:6px">Garanties</div><ul style="margin:0;padding-left:16px;font-size:12px;line-height:1.8">${garanties}</ul></div>`:''}
-  <div class="footer">${tp.tel?`T�l : ${tp.tel}  `:''} ${tp.qr||''}</div>
+  <div class="footer">${tp.tel?`Tl : ${tp.tel}  `:''} ${tp.qr||''}</div>
   </div></body></html>`;
   const w=window.open('','_blank','width=460,height=700');w.document.write(html);w.document.close();setTimeout(()=>w.print(),300);
 }
 
 function sendTPMail(){
   const tp=ltp();
-  const nom=tp.nom||'AssurÃ©';
+  const nom=tp.nom||'Assuré';
   const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-  const subject=encodeURIComponent(`${nom} | ATTESTATION DE TIERS PAYANT | ValiditÃ© ${validStr}`);
-  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`  â€¢ ${g}`).join('\n');
-  const body=encodeURIComponent(`ATTESTATION DE TIERS PAYANT\n${'��'.repeat(35)}\n\nOrganisme : ${tp.organisme||'�'}\nTitulaire : ${nom}\nN� adh�rent : ${tp.adherent||'�'}\nN� SS : ${tp.nss||'�'}\nContrat : ${tp.contrat||'�'}\nAMO / S�cu : ${tp.amo||'�'}\nValidit� : ${validStr}\n\nGaranties principales :\n${garanties||'�'}\n\nT�l. mutuelle : ${tp.tel||'�'}\n${tp.qr?'R�f : '+tp.qr:''}\n\nDocument g�n�r� automatiquement par Sant�Suivi`);
+  const subject=encodeURIComponent(`${nom} | ATTESTATION DE TIERS PAYANT | Validité ${validStr}`);
+  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`  ⬢ ${g}`).join('\n');
+  const body=encodeURIComponent(`ATTESTATION DE TIERS PAYANT\n${'?'.repeat(35)}\n\nOrganisme : ${tp.organisme||'?'}\nTitulaire : ${nom}\nN° adhrent : ${tp.adherent||'?'}\nN° SS : ${tp.nss||'?'}\nContrat : ${tp.contrat||'?'}\nAMO / Sécu : ${tp.amo||'?'}\nValidit : ${validStr}\n\nGaranties principales :\n${garanties||'?'}\n\nTl. mutuelle : ${tp.tel||'?'}\n${tp.qr?'Rf : '+tp.qr:''}\n\nDocument gnr automatiquement par SantSuivi`);
   window.location.href=`mailto:?subject=${subject}&body=${body}`;
-  const ok=document.getElementById('tp-send-ok');ok.textContent='Ouverture de votre messagerieâ€¦';ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
+  const ok=document.getElementById('tp-send-ok');ok.textContent='Ouverture de votre messagerie⬦';ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
 }
 
 function copyTPText(){
   const tp=ltp();
   const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR'):'';
-  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`â€¢ ${g}`).join('\n');
-  const txt=`TIERS PAYANT � ${tp.organisme||''}\nTitulaire : ${tp.nom||''}\nN� adh�rent : ${tp.adherent||''}\nN� SS : ${tp.nss||''}\nValidit� : ${validStr}\n${garanties?'Garanties :\n'+garanties:''}`;
-  navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>{const ok=document.getElementById('tp-send-ok');ok.textContent='Texte copiÃ© dans le presse-papiers';ok.style.display='flex';setTimeout(()=>ok.style.display='none',2500);});
+  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`⬢ ${g}`).join('\n');
+  const txt=`TIERS PAYANT ? ${tp.organisme||''}\nTitulaire : ${tp.nom||''}\nN° adhrent : ${tp.adherent||''}\nN° SS : ${tp.nss||''}\nValidit : ${validStr}\n${garanties?'Garanties :\n'+garanties:''}`;
+  navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>{const ok=document.getElementById('tp-send-ok');ok.textContent='Texte copié dans le presse-papiers';ok.style.display='flex';setTimeout(()=>ok.style.display='none',2500);});
 }
 
 // ============================================================
@@ -1645,17 +1651,17 @@ function copyTPText(){
 // ============================================================
 function renderContracts(){
   const cts=lct();const el=document.getElementById('contract-list');
-  if(!cts.length){el.innerHTML='<div class="alert alert-info" style="margin-bottom:1rem">Aucun document contractuel â€” ajoutez vos CGV ou conditions particuliÃ¨res ci-dessous.</div>';return;}
-  el.innerHTML=cts.map((c,i)=>`<div class="contract-item"><div class="contract-badge"><svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" stroke="#fff" stroke-width="1.2"/><path d="M10 2v3h3" stroke="#fff" stroke-width="1.2"/><path d="M5 7h6M5 9.5h6M5 12h4" stroke="#fff" stroke-width="1" opacity=".6"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${c.nom}</div><div style="font-size:11px;color:var(--text3)">${c.type} Â· ${c.content.length} caractÃ¨res</div></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="analyzeContract(${i})">Analyser par IA</button><button class="btn btn-danger btn-sm" onclick="delContract(${i})">Suppr.</button></div></div>`).join('');
+  if(!cts.length){el.innerHTML='<div class="alert alert-info" style="margin-bottom:1rem">Aucun document contractuel — ajoutez vos CGV ou conditions particulières ci-dessous.</div>';return;}
+  el.innerHTML=cts.map((c,i)=>`<div class="contract-item"><div class="contract-badge"><svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" stroke="#fff" stroke-width="1.2"/><path d="M10 2v3h3" stroke="#fff" stroke-width="1.2"/><path d="M5 7h6M5 9.5h6M5 12h4" stroke="#fff" stroke-width="1" opacity=".6"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${c.nom}</div><div style="font-size:11px;color:var(--text3)">${c.type} · ${c.content.length} caractères</div></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="analyzeContract(${i})">Analyser par IA</button><button class="btn btn-danger btn-sm" onclick="delContract(${i})">Suppr.</button></div></div>`).join('');
 }
 
 function renderPlafonds(){
   const cfg=lcfg();const el=document.getElementById('plafonds-list');const sr=document.getElementById('seuil-rac');if(sr)sr.value=cfg.seuil_rac_mensuel||200;
   const yr=yrNow();const entries=ld().filter(e=>e.date&&e.date.startsWith(yr));
   const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0));});
-  if(!(cfg.plafonds||[]).length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">Aucun plafond configurÃ©</div>';return;}
+  if(!(cfg.plafonds||[]).length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">Aucun plafond configuré</div>';return;}
   el.innerHTML=(cfg.plafonds||[]).map((p,i)=>{const c=bycat[p.categorie]||0;const pct=Math.min(100,p.montant>0?c/p.montant*100:0);const fc=pct>=90?'#C0392B':pct>=70?'#B7600A':'#1A4D3A';
-    return`<div style="margin-bottom:1rem"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:500">${p.categorie}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--text3)">${fmt(c)} / ${fmt(p.montant)}</span><button class="btn btn-danger btn-sm" style="padding:3px 8px" onclick="delPlafond(${i})">Ã—</button></div></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${fc}"></div></div><div style="font-size:11px;color:var(--text3);margin-top:3px">${pct.toFixed(0)}% â€” reste ${fmt(Math.max(0,p.montant-c))}</div></div>`;}).join('');
+    return`<div style="margin-bottom:1rem"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:500">${p.categorie}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--text3)">${fmt(c)} / ${fmt(p.montant)}</span><button class="btn btn-danger btn-sm" style="padding:3px 8px" onclick="delPlafond(${i})">×</button></div></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${fc}"></div></div><div style="font-size:11px;color:var(--text3);margin-top:3px">${pct.toFixed(0)}% — reste ${fmt(Math.max(0,p.montant-c))}</div></div>`;}).join('');
 }
 
 function addPlafond(){
@@ -1687,18 +1693,18 @@ function delContract(i){const cts=lct();cts.splice(i,1);sct(cts);renderContracts
 async function analyzeContract(idx){
   const cts=lct();const c=cts[idx];if(!c)return;
   const el=document.getElementById('contract-analysis');const res=document.getElementById('contract-analysis-result');
-  el.style.display='block';res.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--info)"><div class="spinner"></div> Analyse en coursâ€¦</div>';
+  el.style.display='block';res.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--info)"><div class="spinner"></div> Analyse en cours⬦</div>';
   try{
-    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:1000,messages:[{role:'user',content:`Analyse ce document de contrat santÃ© franÃ§ais et extrais en JSON (sans markdown) :
+    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:1000,messages:[{role:'user',content:`Analyse ce document de contrat santé français et extrais en JSON (sans markdown) :
 {"plafonds":[{"categorie":"","montant":0,"periode":"annuel"}],"taux_remboursement":[{"categorie":"","taux_secu":0,"taux_mutuelle":0}],"informations_cles":[""],"points_attention":[""]}
 Document : ${c.content.slice(0,4000)}`}]})});
     const data=await resp.json();
     if(!resp.ok||data?.error)throw new Error(data?.error||`Erreur IA (${resp.status})`);
     const raw=data.content?.find(x=>x.type==='text')?.text||'{}';
     const parsed=parseAiJson(raw);
-    let html=`<div style="font-size:12px;color:var(--text2)"><div style="font-weight:500;margin-bottom:8px;color:var(--text)">RÃ©sumÃ© automatique de "${c.nom}"</div>`;
-    if(parsed.informations_cles?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Informations cl�s</div>${parsed.informations_cles.map(i=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">" ${i}</div>`).join('')}</div>`;}
-    if(parsed.plafonds?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Plafonds d�tect�s</div>${parsed.plafonds.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.categorie||'?'} : ${fmt(p.montant||0)} / ${p.periode||'an'}</div>`).join('')}</div><button class="btn btn-primary btn-sm" onclick='applyPlafonds(${JSON.stringify(parsed.plafonds)})' style="margin-bottom:10px">Appliquer ces plafonds</button>`;}
+    let html=`<div style="font-size:12px;color:var(--text2)"><div style="font-weight:500;margin-bottom:8px;color:var(--text)">Résumé automatique de "${c.nom}"</div>`;
+    if(parsed.informations_cles?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Informations cls</div>${parsed.informations_cles.map(i=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">" ${i}</div>`).join('')}</div>`;}
+    if(parsed.plafonds?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Plafonds dtects</div>${parsed.plafonds.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.categorie||'?'} : ${fmt(p.montant||0)} / ${p.periode||'an'}</div>`).join('')}</div><button class="btn btn-primary btn-sm" onclick='applyPlafonds(${JSON.stringify(parsed.plafonds)})' style="margin-bottom:10px">Appliquer ces plafonds</button>`;}
     if(parsed.points_attention?.length){html+=`<div><div class="card-subtitle" style="color:var(--warn)">Points d'attention</div>${parsed.points_attention.map(p=>`<div class="alert alert-warn" style="margin-bottom:4px;font-size:11px">" ${p}</div>`).join('')}</div>`;}
     html+='</div>';res.innerHTML=html;
   }catch(err){res.innerHTML=`<div class="alert alert-danger">Erreur : ${err.message}</div>`;}
@@ -1707,7 +1713,7 @@ Document : ${c.content.slice(0,4000)}`}]})});
 function applyPlafonds(plafonds){
   const cfg=lcfg();if(!cfg.plafonds)cfg.plafonds=[];
   plafonds.forEach(p=>{if(!p.categorie||!p.montant)return;const ex=cfg.plafonds.findIndex(x=>x.categorie===p.categorie);if(ex>=0)cfg.plafonds[ex].montant=p.montant;else cfg.plafonds.push({categorie:p.categorie,montant:p.montant});});
-  scfg(cfg);alert('Plafonds appliquÃ©s ! Rendez-vous dans l\'onglet Contrat pour les voir.');
+  scfg(cfg);alert('Plafonds appliqués ! Rendez-vous dans l\'onglet Contrat pour les voir.');
 }
 
 // ============================================================
@@ -1722,17 +1728,17 @@ function updateExpYears(){
 
 function exportCSV(){
   const entries=ld();const yr=document.getElementById('exp-yr').value;const cat=document.getElementById('exp-cat').value;const stat=document.getElementById('exp-stat').value;
-  let data=entries;if(yr!=='all')data=data.filter(e=>e.date&&e.date.startsWith(yr));if(cat)data=data.filter(e=>e.categorie===cat);if(stat)data=data.filter(e=>(e.statut||'En attente SÃ©cu')===stat);
+  let data=entries;if(yr!=='all')data=data.filter(e=>e.date&&e.date.startsWith(yr));if(cat)data=data.filter(e=>e.categorie===cat);if(stat)data=data.filter(e=>(e.statut||'En attente Sécu')===stat);
   data=data.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const headers=['Date','Praticien','CatÃ©gorie','Acte','Montant (€)','Remb. SÃ©cu (€)','Remb. Mutuelle (€)','RAC (€)','Taux couverture (%)','Statut','Notes','Source'];
+  const headers=['Date','Praticien','Catégorie','Acte','Montant (€)','Remb. Sécu (€)','Remb. Mutuelle (€)','RAC (€)','Taux couverture (%)','Statut','Notes','Source'];
   const rows=data.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const taux=(+e.montant||0)>0?((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))/(+e.montant||0)*100:0;return[e.date||'',e.praticien||'',e.categorie||'',e.acte||'',(+e.montant||0).toFixed(2),(+e.remboursement_secu||0).toFixed(2),(+e.remboursement_mutuelle||0).toFixed(2),rac.toFixed(2),taux.toFixed(0),e.statut||'',e.notes||'',e.source||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';');});
   const csv='\uFEFF'+headers.join(';')+'\n'+rows.join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`sante_${yr==='all'?'tout':yr}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);
-  const ok=document.getElementById('exp-ok');ok.textContent=`${data.length} ligne${data.length>1?'s':''} export�e${data.length>1?'s':''}`;ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
+  const ok=document.getElementById('exp-ok');ok.textContent=`${data.length} ligne${data.length>1?'s':''} exporte${data.length>1?'s':''}`;ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
 }
 
 function exportPraticiens(){
-  const prats=lp();const headers=['Nom','SpÃ©cialitÃ©','TÃ©lÃ©phone','Email','Adresse','Ville','RPPS','Lien RDV','Notes'];
+  const prats=lp();const headers=['Nom','Spécialité','Téléphone','Email','Adresse','Ville','RPPS','Lien RDV','Notes'];
   const rows=prats.map(p=>[p.nom,p.specialite,p.tel,p.email,p.adresse,p.ville,p.rpps,p.rdv,p.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(';'));
   const csv='\uFEFF'+headers.join(';')+'\n'+rows.join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='praticiens.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -1826,7 +1832,7 @@ async function copySyncCode(){
     }else{
       const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
     }
-    showExpOk('Code de synchro copiÃ©. Collez-le sur mobile dans "Coller code synchro mobile".',false);
+    showExpOk('Code de synchro copié. Collez-le sur mobile dans "Coller code synchro mobile".',false);
   }catch(err){
     showExpOk(`Impossible de copier le code synchro : ${err.message}`,true);
   }
@@ -1840,7 +1846,7 @@ function pasteSyncCode(){
     if(!txt.startsWith('SSV1.'))throw new Error('format invalide');
     const payload=JSON.parse(b64DecodeUtf8(txt.slice(5)));
     applySyncPayload(payload);
-    showExpOk('Synchro appliquÃ©e avec succÃ¨s sur cet appareil.',false);
+    showExpOk('Synchro appliquée avec succès sur cet appareil.',false);
   }catch(err){
     showExpOk(`Code de synchro invalide : ${err.message}`,true);
   }
@@ -1989,7 +1995,7 @@ function saveEntryDetail(){
 }
 
 function resetAllData(){
-  const ok=confirm("Cette action va supprimer toutes les donnÃ©es locales (soins, praticiens, carte tiers payant, contrats). Continuer ?");
+  const ok=confirm("Cette action va supprimer toutes les données locales (soins, praticiens, carte tiers payant, contrats). Continuer ?");
   if(!ok)return;
   try{
     [SK,PK,CFG,TPK,CTK,ENTRIES_UPDATED_KEY].forEach(k=>localStorage.removeItem(k));
@@ -1998,12 +2004,12 @@ function resetAllData(){
   currentDetailEntryId=null;
   notifyEntriesUpdated();
   resetSaisie();
-  showExpOk('Remise Ã  zÃ©ro terminÃ©e. Vous pouvez refaire une saisie propre.',false);
+  showExpOk('Remise à zéro terminée. Vous pouvez refaire une saisie propre.',false);
 }
 
 function renderExpSummary(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('exp-annual-table');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
   const annual=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('');
   let missingTotal=0;
   entries.forEach(e=>{missingTotal+=validateEntryMinimalFields(applyIntegratedSchemaToEntry(e)).length;});
