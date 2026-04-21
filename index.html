@@ -1101,6 +1101,9 @@ let searchCatFilter=null;
 let refreshScheduled=false;
 let uiNormalizeScheduled=false;
 let currentDetailEntryId=null;
+let dbSelectedIds=new Set();
+let dbVisibleIds=[];
+let bulkDraft={cat:'',prat:'',stat:''};
 
 // ============================================================
 // INIT
@@ -1216,6 +1219,72 @@ function renderDashboard(){
 }
 
 let currentDbTab='list';
+function pruneDbSelection(){
+  const existingIds=new Set(ld().map(e=>Number(e.id)));
+  dbSelectedIds=new Set([...dbSelectedIds].filter(id=>existingIds.has(Number(id))));
+}
+
+function toggleDbEntrySelection(id,checked){
+  syncBulkDraftFromDom();
+  const n=Number(id);
+  if(checked)dbSelectedIds.add(n);
+  else dbSelectedIds.delete(n);
+  renderDbTab('list');
+}
+
+function toggleDbSelectAllVisible(checked){
+  syncBulkDraftFromDom();
+  dbVisibleIds.forEach(id=>{
+    if(checked)dbSelectedIds.add(Number(id));
+    else dbSelectedIds.delete(Number(id));
+  });
+  renderDbTab('list');
+}
+
+function clearBulkSelection(){
+  syncBulkDraftFromDom();
+  dbSelectedIds.clear();
+  renderDbTab('list');
+}
+
+function syncBulkDraftFromDom(){
+  const cat=document.getElementById('bulk-cat');
+  const prat=document.getElementById('bulk-prat');
+  const stat=document.getElementById('bulk-stat');
+  if(cat)bulkDraft.cat=cat.value||'';
+  if(prat)bulkDraft.prat=prat.value||'';
+  if(stat)bulkDraft.stat=stat.value||'';
+}
+
+function applyBulkEdit(){
+  syncBulkDraftFromDom();
+  pruneDbSelection();
+  if(!dbSelectedIds.size){
+    alert('Sélectionnez au moins une ligne.');
+    return;
+  }
+  const cat=(bulkDraft.cat||'').trim();
+  const prat=(bulkDraft.prat||'').trim();
+  const stat=(bulkDraft.stat||'').trim();
+  if(!cat&&!prat&&!stat){
+    alert('Renseignez au moins un champ à modifier (catégorie, praticien ou statut).');
+    return;
+  }
+
+  const data=ld();
+  let changed=0;
+  data.forEach(e=>{
+    if(!dbSelectedIds.has(Number(e.id)))return;
+    if(cat)e.categorie=cat;
+    if(prat)e.praticien=prat;
+    if(stat)e.statut=stat;
+    changed++;
+  });
+  if(!changed)return;
+  sd(data);
+  renderDashboard();
+}
+
 function switchDbTab(tab,btn){
   currentDbTab=tab;
   ['list','chart','cats'].forEach(t=>document.getElementById('db-tab-'+t).style.display='none');
@@ -1227,13 +1296,18 @@ function switchDbTab(tab,btn){
 function renderDbTab(tab){
   const entries=filterPeriod(ld()).slice().reverse();
   if(tab==='list'){
+    pruneDbSelection();
     if(!entries.length){document.getElementById('db-tab-list').innerHTML='<div class="empty-state"><div class="empty-icon">📋</div>Aucune entrée — importez votre premier document</div>';return;}
-    const rows=entries.slice(0,20).map(e=>{
+    const visibleEntries=entries.slice(0,20);
+    dbVisibleIds=visibleEntries.map(e=>Number(e.id));
+    const selectedCount=[...dbSelectedIds].length;
+    const allVisibleSelected=dbVisibleIds.length>0&&dbVisibleIds.every(id=>dbSelectedIds.has(Number(id)));
+    const rows=visibleEntries.map(e=>{
       const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);
       const si=STATUTS.indexOf(e.statut||'En attente Sécu');
-      return`<tr><td style="color:var(--text3)">${e.date||'?'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'?'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td><td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openEntryDetail(${e.id})">Détail</button><button class="btn btn-danger btn-sm" onclick="deleteEntryById(${e.id})">Suppr.</button></div></td></tr>`;
+      return`<tr><td><input type="checkbox" ${dbSelectedIds.has(Number(e.id))?'checked':''} onchange="toggleDbEntrySelection(${e.id},this.checked)" aria-label="Sélectionner la ligne ${e.id}"></td><td style="color:var(--text3)">${e.date||'?'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'?'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td><td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openEntryDetail(${e.id})">Détail</button><button class="btn btn-danger btn-sm" onclick="deleteEntryById(${e.id})">Suppr.</button></div></td></tr>`;
     }).join('');
-    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th><th class="r">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entrées supplémentaires</div>`:''}`;
+    document.getElementById('db-tab-list').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><span style="font-size:12px;color:var(--text3)">${selectedCount} sélectionnée${selectedCount>1?'s':''}</span><select id="bulk-cat" class="stab" style="border-radius:var(--radius);padding:6px 10px" onchange="syncBulkDraftFromDom()">${['<option value="">Catégorie</option>',...CATS.map(c=>`<option value="${c}" ${bulkDraft.cat===c?'selected':''}>${c}</option>`)].join('')}</select><input id="bulk-prat" placeholder="Praticien" value="${String(bulkDraft.prat||'').replace(/"/g,'&quot;')}" oninput="syncBulkDraftFromDom()" style="padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;min-width:160px"><select id="bulk-stat" class="stab" style="border-radius:var(--radius);padding:6px 10px" onchange="syncBulkDraftFromDom()">${['<option value="">Statut</option>',...STATUTS.map(s=>`<option value="${s}" ${bulkDraft.stat===s?'selected':''}>${s}</option>`)].join('')}</select><button class="btn btn-primary btn-sm" onclick="applyBulkEdit()">Appliquer en masse</button><button class="btn btn-secondary btn-sm" onclick="clearBulkSelection()">Désélectionner</button></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th><input type="checkbox" ${allVisibleSelected?'checked':''} onchange="toggleDbSelectAllVisible(this.checked)" aria-label="Tout sélectionner"></th><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th><th class="r">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entrées supplémentaires</div>`:''}`;
   }
   if(tab==='chart'){
     const byM=Array(12).fill(0).map(()=>({d:0,r:0}));
