@@ -1,8 +1,46 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 function mapModel(model) {
   if (!model || String(model).toLowerCase().includes('claude')) {
     return process.env.OPENAI_MODEL || 'gpt-4.1-mini';
   }
   return model;
+}
+
+function readEnvFileKey() {
+  try {
+    const envPath = join(process.cwd(), '.env');
+    const content = readFileSync(envPath, 'utf8');
+    const lines = content.split(/\r?\n/);
+
+    for (const lineRaw of lines) {
+      const line = lineRaw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const eqIdx = line.indexOf('=');
+      if (eqIdx <= 0) continue;
+
+      const key = line.slice(0, eqIdx).trim();
+      if (key !== 'OPENAI_API_KEY' && key !== 'CHATGPT_API_KEY') continue;
+
+      let value = line.slice(eqIdx + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (value) return value;
+    }
+  } catch {
+    // Ignore read errors and rely on process.env only.
+  }
+  return '';
+}
+
+function getApiKey() {
+  return (
+    process.env.OPENAI_API_KEY?.trim() ||
+    process.env.CHATGPT_API_KEY?.trim() ||
+    readEnvFileKey()
+  );
 }
 
 function toInputContent(content) {
@@ -87,7 +125,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const apiKey = process.env.OPENAI_API_KEY || process.env.CHATGPT_API_KEY;
+    const apiKey = getApiKey();
     if (!apiKey) {
       return res.status(500).json({ error: 'Missing OPENAI_API_KEY (or CHATGPT_API_KEY).' });
     }
