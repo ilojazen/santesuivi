@@ -335,6 +335,21 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
   <div id="tp-alerts"></div>
   <div id="tp-card-render"></div>
   <div class="card">
+    <div class="card-title">Importer une carte tiers payant (image/PDF)</div>
+    <div class="upload-zone" id="tpDropZone" onclick="document.getElementById('tpFileInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleTpDrop(event)">
+      <input type="file" id="tpFileInput" accept="image/*,.pdf" multiple onchange="handleTpFiles(this.files)">
+      <div style="font-size:28px;margin-bottom:8px;opacity:.4">â¬†</div>
+      <div style="font-weight:500;margin-bottom:4px">Déposer ou cliquer pour importer la carte</div>
+      <div style="font-size:12px;color:var(--text3)">Recto/verso carte mutuelle, attestation, PDF</div>
+    </div>
+    <div class="ai-proc" id="tpAiProc"><div class="spinner"></div><span>Analyse de la carte tiers payant en cours…</span></div>
+    <div class="ai-result" id="tpAiResult">
+      <div style="font-weight:500;font-size:12px;color:var(--accent);margin-bottom:4px">Champs détectés — vérifiez puis enregistrez</div>
+      <div id="tpAiFields"></div>
+      <button class="btn btn-primary btn-sm" onclick="applyDetectedTpData()" style="align-self:flex-end;margin-top:6px">Appliquer aux champs</button>
+    </div>
+  </div>
+  <div class="card">
     <div class="card-title">Mes informations</div>
     <div class="fg2">
       <div class="field"><label>Nom complet</label><input id="tp-nom" placeholder="DUPONT Jean" oninput="saveTp();renderTP()"></div>
@@ -955,6 +970,7 @@ function buildYearButtons(targetId,current,handlerName){
 
 let charts={};
 let pendingEntries=[];
+let pendingTpData=null;
 let currentPeriod=yrNow();
 let anSubview='comparaison';
 let anPeriod='all';
@@ -1412,6 +1428,125 @@ function delPrat(idx){if(!confirm('Supprimer ce praticien ?'))return;const prats
 // ============================================================
 // TIERS PAYANT
 // ============================================================
+function handleTpDrop(e){
+  e.preventDefault();
+  document.getElementById('tpDropZone').classList.remove('drag');
+  handleTpFiles(e.dataTransfer.files);
+}
+
+async function analyzeSingleTpDoc(file){
+  const toB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
+  const b64=await toB64(file);
+  const mt=file.type||'image/jpeg';
+  const isImg=mt.startsWith('image/');
+  const prompt=`Tu extrais les informations d'une carte tiers payant française.
+Retourne UNIQUEMENT un JSON valide (sans markdown) au format:
+{
+  "nom":"",
+  "adherent":"",
+  "nss":"",
+  "organisme":"",
+  "contrat":"",
+  "validite":"YYYY-MM-DD ou vide",
+  "tel":"",
+  "amo":"",
+  "garanties":[""],
+  "qr":""
+}
+Règles:
+- Si une donnée est absente: chaîne vide.
+- "garanties" doit être un tableau de textes courts.
+- N'invente aucune donnée.
+- Date au format ISO YYYY-MM-DD quand possible.`;
+  const msgContent=isImg
+    ?[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]
+    :[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}];
+  const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:900,messages:[{role:'user',content:msgContent}]})});
+  const data=await resp.json();
+  if(!resp.ok||data?.error)throw new Error(data?.error||`Erreur IA (${resp.status})`);
+  const raw=data.content?.find(c=>c.type==='text')?.text||'{}';
+  const parsed=parseAiJson(raw);
+  return{
+    nom:String(parsed?.nom||'').trim(),
+    adherent:String(parsed?.adherent||'').trim(),
+    nss:String(parsed?.nss||'').trim(),
+    organisme:String(parsed?.organisme||'').trim(),
+    contrat:String(parsed?.contrat||'').trim(),
+    validite:String(parsed?.validite||'').trim(),
+    tel:String(parsed?.tel||'').trim(),
+    amo:String(parsed?.amo||'').trim(),
+    garanties:Array.isArray(parsed?.garanties)?parsed.garanties.map(v=>String(v||'').trim()).filter(Boolean):[],
+    qr:String(parsed?.qr||'').trim(),
+  };
+}
+
+async function handleTpFiles(fileList){
+  const files=Array.from(fileList||[]).filter(Boolean);
+  if(!files.length)return;
+  const proc=document.getElementById('tpAiProc');
+  const result=document.getElementById('tpAiResult');
+  const fields=document.getElementById('tpAiFields');
+  proc.classList.add('on');
+  result.classList.remove('on');
+  document.querySelector('#tpAiProc span').textContent=`Analyse de ${files.length} document${files.length>1?'s':''} tiers payant…`;
+  try{
+    const merged={nom:'',adherent:'',nss:'',organisme:'',contrat:'',validite:'',tel:'',amo:'',garanties:[],qr:''};
+    for(const f of files){
+      const d=await analyzeSingleTpDoc(f);
+      Object.keys(merged).forEach(k=>{
+        if(k==='garanties'){merged.garanties=[...new Set(merged.garanties.concat(d.garanties||[]))];return;}
+        if(!merged[k]&&d[k])merged[k]=d[k];
+      });
+    }
+    pendingTpData=merged;
+    fields.innerHTML=`
+      <div class="ai-field"><span class="ai-field-label">Nom</span><span>${merged.nom||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">N° adhérent</span><span>${merged.adherent||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">N° sécurité sociale</span><span>${merged.nss||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">Organisme</span><span>${merged.organisme||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">Contrat</span><span>${merged.contrat||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">Validité</span><span>${merged.validite||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">Téléphone</span><span>${merged.tel||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">AMO</span><span>${merged.amo||'—'}</span></div>
+      <div class="ai-field"><span class="ai-field-label">Garanties</span><span>${merged.garanties.length?merged.garanties.join(' | '):'—'}</span></div>
+    `;
+    proc.classList.remove('on');
+    result.classList.add('on');
+  }catch(err){
+    proc.classList.remove('on');
+    fields.innerHTML=`<div style="color:var(--danger)">Erreur : ${err.message}</div>`;
+    result.classList.add('on');
+    pendingTpData=null;
+  }finally{
+    document.querySelector('#tpAiProc span').textContent='Analyse de la carte tiers payant en cours…';
+    const fi=document.getElementById('tpFileInput');
+    if(fi)fi.value='';
+  }
+}
+
+function applyDetectedTpData(){
+  if(!pendingTpData)return;
+  const d=pendingTpData;
+  const set=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
+  set('tp-nom',d.nom);
+  set('tp-adherent',d.adherent);
+  set('tp-nss',d.nss);
+  set('tp-organisme',d.organisme);
+  set('tp-contrat',d.contrat);
+  set('tp-validite',d.validite);
+  set('tp-tel',d.tel);
+  set('tp-amo',d.amo);
+  if(d.garanties?.length){
+    const gEl=document.getElementById('tp-garanties');
+    if(gEl&&!gEl.value.trim())gEl.value=d.garanties.join('\n');
+  }
+  set('tp-qr',d.qr);
+  saveTp();
+  renderTP();
+  document.getElementById('tpAiResult').classList.remove('on');
+  pendingTpData=null;
+}
+
 function saveTp(){
   const tp={};
   ['nom','adherent','nss','organisme','contrat','validite','tel','amo','garanties','qr'].forEach(f=>{const el=document.getElementById('tp-'+f);if(el)tp[f]=el.value;});
