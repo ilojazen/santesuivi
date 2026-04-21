@@ -934,6 +934,50 @@ function isLikelySourceType(entry,type){
   return false;
 }
 
+function simplifyMatchText(v){
+  return fixMojibakeText(String(v||''))
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'')
+    .trim();
+}
+
+function isUnknownLikePraticien(v){
+  return/^(inconnu|praticiennonprecise|saisiemanuellerequise|\?)$/i.test(simplifyMatchText(v));
+}
+
+function scoreDateAmountMergeCandidate(existing,incoming,candidateCount){
+  if(!existing||!incoming)return -1;
+
+  let score=0;
+  if(isLikelyComplementaryPair(existing,incoming))score+=4;
+
+  const eAct=simplifyMatchText(existing.acte);
+  const iAct=simplifyMatchText(incoming.acte);
+  if(eAct&&iAct&&eAct===iAct)score+=2;
+
+  const ePr=simplifyMatchText(existing.praticien);
+  const iPr=simplifyMatchText(incoming.praticien);
+  if(ePr&&iPr&&!isUnknownLikePraticien(ePr)&&!isUnknownLikePraticien(iPr)&&ePr===iPr)score+=2;
+
+  const exHasSecu=(+existing.remboursement_secu||0)>0;
+  const exHasMut=(+existing.remboursement_mutuelle||0)>0;
+  const inHasSecu=(+incoming.remboursement_secu||0)>0;
+  const inHasMut=(+incoming.remboursement_mutuelle||0)>0;
+  if((exHasSecu&&inHasMut)||(exHasMut&&inHasSecu))score+=2;
+
+  const exSe=isLikelySourceType(existing,'releve_secu');
+  const exCs=isLikelySourceType(existing,'releve_complementaire');
+  const inSe=isLikelySourceType(incoming,'releve_secu');
+  const inCs=isLikelySourceType(incoming,'releve_complementaire');
+  if((exSe&&inCs)||(exCs&&inSe))score+=3;
+
+  // If only one candidate exists for same date+montant, prefer merge to update instead of duplicating.
+  if(candidateCount===1)score+=1;
+  return score;
+}
+
 function dedupeEntries(entries){
   const out=[];const seen=new Map();
   const list=(entries||[]).filter(Boolean);
@@ -974,15 +1018,21 @@ function dedupeEntries(entries){
       return;
     }
     const idxList=recoupeSeen.get(k2)||[];
-    let merged=false;
+    let bestIdx=-1;
+    let bestScore=-1;
     for(const idx of idxList){
-      if(isLikelyComplementaryPair(out2[idx],e)){
-        out2[idx]=mergeEntries(out2[idx],e,true);
-        merged=true;
-        break;
+      const s=scoreDateAmountMergeCandidate(out2[idx],e,idxList.length);
+      if(s>bestScore){
+        bestScore=s;
+        bestIdx=idx;
       }
     }
-    if(merged)return;
+
+    if(bestIdx>=0&&bestScore>=3){
+      out2[bestIdx]=mergeEntries(out2[bestIdx],e,true);
+      return;
+    }
+
     // Same date+amount but not complementary: keep as separate prestation.
     idxList.push(out2.length);
     recoupeSeen.set(k2,idxList);
