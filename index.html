@@ -695,11 +695,21 @@ function normalizeStatut(raw,total,secu,mut){
   return 'En attente Sécu';
 }
 
+function isRetentionLikeText(text){
+  const t=fixMojibakeText(String(text||'')).toLowerCase();
+  return/(franchise|participation forfaitaire|pfh|pft|frh|frt|tm majore|forf non rembours|pap|retenir|retenue|pr[eé]l[eè]vement diff[eé]r[eé]|prelevement differe)/i.test(t);
+}
+
 function inferSourceType(raw,fileName){
+  const file=fixMojibakeText(String(fileName||'')).toLowerCase().trim();
+  if(/releve.?mensuel|cpam|ameli|secu|s[ée]curit[ée]/.test(file))return 'releve_secu';
+  // In this workflow, complementary statements are often exported with numeric PDF names (e.g. 1602.pdf).
+  if(/^\d{3,}\.pdf$/.test(file))return 'releve_complementaire';
+
   const txt=fixMojibakeText([
     raw?.source_type,raw?.notes,raw?.statut,raw?.acte,raw?.contexte_acte,fileName,
   ].filter(Boolean).join(' ')).toLowerCase();
-  if(/compl[eé]mentaire|mutuelle|amc|oc|roc/.test(txt))return 'releve_complementaire';
+  if(/compl[eé]mentaire|mutuelle|amc|oc|roc|almerys|harmonie|malakoff|mgen|aesio|apivia/.test(txt))return 'releve_complementaire';
   if(/cpam|s[ée]cu|securite sociale|assurance maladie|ameli|\bro\b/.test(txt))return 'releve_secu';
   return 'facture';
 }
@@ -730,7 +740,7 @@ function detectRetentionFromRaw(raw){
   const text=fixMojibakeText([
     raw?.acte,raw?.acte_code,raw?.contexte_acte,raw?.notes,raw?.statut,raw?.categorie,
   ].filter(Boolean).join(' ')).toLowerCase();
-  const isRetention=/(franchise|participation forfaitaire|pfh|pft|frh|frt|tm majore|forf non rembours|pap|retenir|retenue|pr[eé]l[eè]vement diff[eé]r[eé]|prelevement differe)/i.test(text);
+  const isRetention=isRetentionLikeText(text);
   if(!isRetention)return null;
 
   const signedCandidates=[
@@ -774,6 +784,43 @@ function applyRetentionDeductions(entries,deductions){
   });
 
   return entries;
+}
+
+function extractRetentionArtifact(entry){
+  const text=fixMojibakeText([
+    entry?.acte,entry?.contexte_acte,entry?.notes,entry?.statut,entry?.categorie,
+  ].filter(Boolean).join(' '));
+  if(!isRetentionLikeText(text))return null;
+  if(/franchise d[ée]duite\s*:/i.test(text))return null;
+
+  const secu=+entry?.remboursement_secu||0;
+  const mut=+entry?.remboursement_mutuelle||0;
+  if(secu>0||mut>0)return null;
+
+  const amount=parseAmount(entry?.montant??entry?.depense_reelle??entry?.montant_paye);
+  if(amount<=0)return null;
+  return{
+    id:Number(entry?.id),
+    date:normalizeDate(entry?.date||entry?.date_soin,''),
+    amount,
+    label:text.toLowerCase(),
+  };
+}
+
+function repairRetentionArtifacts(entries){
+  const source=(entries||[]).map(e=>({...e}));
+  const deductions=[];
+  const kept=[];
+  source.forEach(e=>{
+    const a=extractRetentionArtifact(e);
+    if(a){
+      deductions.push({date:a.date,amount:a.amount,label:a.label});
+      return;
+    }
+    kept.push(e);
+  });
+  if(deductions.length)applyRetentionDeductions(kept,deductions);
+  return dedupeEntries(kept);
 }
 
 function normalizeExtractedEntry(raw,fileName,fallbackYear){
@@ -1049,7 +1096,11 @@ function normalizeGenericDeep(v){
 }
 
 function normalizeAndPersistStorage(){
-  try{localStorage.setItem(SK,JSON.stringify(dedupeEntries(normalizeLoadedEntries(ld()))));}catch{}
+  try{
+    const normalized=dedupeEntries(normalizeLoadedEntries(ld()));
+    const repaired=repairRetentionArtifacts(normalized);
+    localStorage.setItem(SK,JSON.stringify(repaired));
+  }catch{}
   try{localStorage.setItem(PK,JSON.stringify(normalizeGenericDeep(lp())));}catch{}
   try{localStorage.setItem(CFG,JSON.stringify(normalizeGenericDeep(lcfg())));}catch{}
   try{localStorage.setItem(TPK,JSON.stringify(normalizeGenericDeep(ltp())));}catch{}
