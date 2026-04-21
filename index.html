@@ -225,7 +225,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
       <div style="font-weight:500;margin-bottom:4px">Déposer ou cliquer pour importer</div>
       <div style="font-size:12px;color:var(--text3)">Feuille de soins · Remboursement mutuelle · Facture praticien</div>
     </div>
-    <div class="ai-proc" id="aiProc"><div class="spinner"></div><span>Claude analyse le document…</span></div>
+    <div class="ai-proc" id="aiProc"><div class="spinner"></div><span>ChatGPT analyse le document…</span></div>
     <div class="ai-result" id="aiResult">
       <div style="font-weight:500;font-size:12px;color:var(--accent);margin-bottom:4px">Données extraites — vérifiez avant de confirmer</div>
       <div id="aiFields"></div>
@@ -427,6 +427,7 @@ const CAT_COLORS={'Médecin généraliste':'#378ADD','Spécialiste':'#7F77DD','D
 const YR_COLORS=['#1A4D3A','#C8A96E','#D85A30','#7F77DD','#378ADD'];
 const AV_COLORS=[['#E8F3EE','#1A4D3A'],['#EDE9FF','#5B21B6'],['#FBF5EA','#8B5B10'],['#EAF1FC','#1A4D8A'],['#FDEEEC','#9B2C2C']];
 const STAT_CLS=['s0','s1','s2','s3'];
+const AI_MODEL='gpt-4.1-mini';
 
 function ld(){try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];}}
 function sd(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch{}}
@@ -448,6 +449,15 @@ function yrNow(){return new Date().getFullYear().toString();}
 function mNow(){return new Date().getMonth()+1;}
 function delta(a,b){if(!b)return null;return(a-b)/b*100;}
 function deltaHtml(d){if(d===null)return '<span class="delta-neu">—</span>';const s=d>0?'+':'';const c=d>2?'delta-neg':d<-2?'delta-pos':'delta-neu';return`<span class="${c}">${s}${d.toFixed(0)}%</span>`;}
+function parseAiJson(raw){
+  const cleaned=String(raw||'').replace(/```json|```/g,'').trim();
+  try{return JSON.parse(cleaned);}
+  catch{
+    const s=cleaned.indexOf('{');const e=cleaned.lastIndexOf('}');
+    if(s>=0&&e>s)return JSON.parse(cleaned.slice(s,e+1));
+    throw new Error('Réponse IA invalide (JSON non détecté).');
+  }
+}
 
 let charts={};
 let pendingEntry=null;
@@ -618,10 +628,11 @@ async function analyzeDoc(file){
     const ctContent=lct().map(c=>c.nom+': '+c.content.slice(0,500)).join('\n\n');
     const prompt=`Tu es un assistant d'extraction de données médicales français. ${ctContent?'Contrat santé de référence:\n'+ctContent+'\n\n':''}Analyse ce document et retourne UNIQUEMENT un objet JSON (sans markdown) avec:\n{"date":"YYYY-MM-DD","praticien":"","categorie":"${CATS.join('|')}","acte":"","montant":0,"remboursement_secu":0,"remboursement_mutuelle":0,"statut":"En attente Sécu","notes":""}. Si absent: null ou 0.`;
     const msgContent=isImg?[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}];
-    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:msgContent}]})});
+    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:1000,messages:[{role:'user',content:msgContent}]})});
     const data=await resp.json();
+    if(!resp.ok||data?.error)throw new Error(data?.error||`Erreur IA (${resp.status})`);
     const raw=data.content?.find(c=>c.type==='text')?.text||'{}';
-    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const parsed=parseAiJson(raw);
     pendingEntry=parsed;
     const labels={date:'Date',praticien:'Praticien',categorie:'Catégorie',acte:'Acte',montant:'Montant',remboursement_secu:'Remb. Sécu',remboursement_mutuelle:'Remb. mutuelle',statut:'Statut'};
     document.getElementById('aiFields').innerHTML=Object.entries(labels).map(([k,l])=>`<div class="ai-field"><span class="ai-field-label">${l}</span><span style="font-weight:500">${typeof parsed[k]==='number'?fmt(parsed[k]):(parsed[k]||'—')}</span></div>`).join('');
@@ -763,7 +774,7 @@ function rTrimestriel(){
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map(y=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('trimestriel')">${y}</button>`).join('')}</div>
   <div class="card"><div class="card-title">Synthèse trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">Évol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
   <div class="card"><div class="card-title">Dépenses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="Dépenses trimestrielles">.</canvas></div></div>`;
-  setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},^{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+  setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rAnnuel(){
@@ -1001,11 +1012,13 @@ async function analyzeContract(idx){
   const el=document.getElementById('contract-analysis');const res=document.getElementById('contract-analysis-result');
   el.style.display='block';res.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--info)"><div class="spinner"></div> Analyse en cours…</div>';
   try{
-    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Analyse ce document de contrat santé français et extrais en JSON (sans markdown) :
+    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:1000,messages:[{role:'user',content:`Analyse ce document de contrat santé français et extrais en JSON (sans markdown) :
 {"plafonds":[{"categorie":"","montant":0,"periode":"annuel"}],"taux_remboursement":[{"categorie":"","taux_secu":0,"taux_mutuelle":0}],"informations_cles":[""],"points_attention":[""]}
 Document : ${c.content.slice(0,4000)}`}]})});
-    const data=await resp.json();const raw=data.content?.find(x=>x.type==='text')?.text||'{}';
-    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const data=await resp.json();
+    if(!resp.ok||data?.error)throw new Error(data?.error||`Erreur IA (${resp.status})`);
+    const raw=data.content?.find(x=>x.type==='text')?.text||'{}';
+    const parsed=parseAiJson(raw);
     let html=`<div style="font-size:12px;color:var(--text2)"><div style="font-weight:500;margin-bottom:8px;color:var(--text)">Résumé automatique de "${c.nom}"</div>`;
     if(parsed.informations_cles?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Informations clés</div>${parsed.informations_cles.map(i=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">• ${i}</div>`).join('')}</div>`;}
     if(parsed.plafonds?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Plafonds détectés</div>${parsed.plafonds.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.categorie||'?'} : ${fmt(p.montant||0)} / ${p.periode||'an'}</div>`).join('')}</div><button class="btn btn-primary btn-sm" onclick='applyPlafonds(${JSON.stringify(parsed.plafonds)})' style="margin-bottom:10px">Appliquer ces plafonds</button>`;}
