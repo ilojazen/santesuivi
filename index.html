@@ -438,7 +438,13 @@ const ENTRIES_UPDATED_KEY=`${SK}_updated_at`;
 const SYNC_CHANNEL_NAME='santesuivi-realtime-v1';
 let syncChannel=null;
 
-function ld(){try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];}}
+function ld(){
+  try{
+    return normalizeLoadedEntries(JSON.parse(localStorage.getItem(SK))||[]);
+  }catch{
+    return[];
+  }
+}
 function sd(d){
   try{
     localStorage.setItem(SK,JSON.stringify(d));
@@ -462,7 +468,7 @@ function today(){return new Date().toISOString().slice(0,10);}
 function yrNow(){return new Date().getFullYear().toString();}
 function mNow(){return new Date().getMonth()+1;}
 function delta(a,b){if(!b)return null;return(a-b)/b*100;}
-function deltaHtml(d){if(d===null)return '<span class="delta-neu">â€”</span>';const s=d>0?'+':'';const c=d>2?'delta-neg':d<-2?'delta-pos':'delta-neu';return`<span class="${c}">${s}${d.toFixed(0)}%</span>`;}
+function deltaHtml(d){if(d===null)return '<span class="delta-neu">—</span>';const s=d>0?'+':'';const c=d>2?'delta-neg':d<-2?'delta-pos':'delta-neu';return`<span class="${c}">${s}${d.toFixed(0)}%</span>`;}
 function parseAiJson(raw){
   const cleaned=String(raw||'').replace(/```json|```/g,'').trim();
   try{return JSON.parse(cleaned);}
@@ -534,32 +540,32 @@ function normalizeDate(raw,fallbackYear){
 }
 
 function normalizeCategory(raw){
-  const s=String(raw||'').trim();
+  const s=fixMojibakeText(String(raw||'').trim());
   if(CATS.includes(s))return s;
   const l=s.toLowerCase();
   if(/pharma|medicam|officine/.test(l))return 'Pharmacie';
   if(/dent|orthodont/.test(l))return 'Dentiste';
-  if(/kine|kin\u00e9|osteo|ost\u00e9o|physio/.test(l))return 'KinÃƒÂ© / ostÃƒÂ©o';
+  if(/kine|kin\u00e9|osteo|ost\u00e9o|physio/.test(l))return 'Kiné / ostéo';
   if(/optique|lunette|verre|opti/.test(l))return 'Optique';
   if(/hospital|clinique|urgence/.test(l))return 'Hospitalisation';
-  if(/general|gÃƒÂ©nÃƒÂ©ral|medecin|mÃƒÂ©decin|traitant/.test(l))return 'MÃƒÂ©decin gÃƒÂ©nÃƒÂ©raliste';
-  if(/special|spÃƒÂ©cial|cardio|dermato|orl|gyn|psy|chir/.test(l))return 'SpÃƒÂ©cialiste';
+  if(/general|g\u00e9n\u00e9ral|medecin|m\u00e9decin|traitant/.test(l))return 'Médecin généraliste';
+  if(/special|sp\u00e9cial|cardio|dermato|orl|gyn|psy|chir/.test(l))return 'Spécialiste';
   return 'Autre';
 }
 
 function normalizeStatut(raw,total,secu,mut){
-  const s=String(raw||'').toLowerCase();
+  const s=fixMojibakeText(String(raw||'')).toLowerCase();
   const remb=secu+mut;
-  if(total>0&&remb>=total*0.995)return 'SoldÃƒÂ©';
-  if(s.includes('sold'))return 'SoldÃƒÂ©';
+  if(total>0&&remb>=total*0.995)return 'Soldé';
+  if(s.includes('sold'))return 'Soldé';
   if(s.includes('mutuelle'))return 'En attente mutuelle';
-  if(s.includes('sÃƒÂ©cu')||s.includes('secu')){
-    if(s.includes('rembours'))return 'RemboursÃƒÂ© SÃƒÂ©cu';
-    return 'En attente SÃƒÂ©cu';
+  if(s.includes('sécu')||s.includes('secu')){
+    if(s.includes('rembours'))return 'Remboursé Sécu';
+    return 'En attente Sécu';
   }
-  if(secu>0&&mut<=0)return 'RemboursÃƒÂ© SÃƒÂ©cu';
+  if(secu>0&&mut<=0)return 'Remboursé Sécu';
   if(secu>0&&mut>0&&remb<total)return 'En attente mutuelle';
-  return 'En attente SÃƒÂ©cu';
+  return 'En attente Sécu';
 }
 
 function normalizeExtractedEntry(raw,fileName,fallbackYear){
@@ -573,7 +579,7 @@ function normalizeExtractedEntry(raw,fileName,fallbackYear){
     date,
     praticien:String(raw?.praticien||'').trim()||'Inconnu',
     categorie:normalizeCategory(raw?.categorie),
-    acte:String(raw?.acte||'').trim()||'Acte mÃƒÂ©dical',
+    acte:String(raw?.acte||'').trim()||'Acte m�dical',
     montant,
     remboursement_secu:Math.min(secu,montant),
     remboursement_mutuelle:Math.min(mut,Math.max(0,montant-secu)),
@@ -585,7 +591,7 @@ function normalizeExtractedEntry(raw,fileName,fallbackYear){
 
 function dedupeEntries(entries){
   const out=[];const seen=new Map();
-  const statusRank={'En attente SÃ©cu':0,'RemboursÃ© SÃ©cu':1,'En attente mutuelle':2,'SoldÃ©':3};
+  const statusRank={'En attente Sécu':0,'Remboursé Sécu':1,'En attente mutuelle':2,'Soldé':3};
   entries.forEach(e=>{
     const k=[
       String(e.date||'').trim(),
@@ -622,16 +628,49 @@ function notifyEntriesUpdated(){
 }
 
 function fixMojibakeText(s){
-  if(!s||typeof s!=='string')return s;
-  return s
-    .replace(/Ã©/g,'é').replace(/Ã¨/g,'è').replace(/Ãª/g,'ê').replace(/Ã«/g,'ë')
-    .replace(/Ã /g,'à').replace(/Ã¢/g,'â').replace(/Ã®/g,'î').replace(/Ã¯/g,'ï')
-    .replace(/Ã´/g,'ô').replace(/Ã¶/g,'ö').replace(/Ã¹/g,'ù').replace(/Ã»/g,'û')
-    .replace(/Ã§/g,'ç').replace(/Ã‰/g,'É').replace(/Ã€/g,'À').replace(/Ã‡/g,'Ç')
-    .replace(/Â·/g,'·').replace(/Â°/g,'°').replace(/Â /g,' ')
+  if(typeof s!=='string'||!s)return s;
+  const score=t=>(String(t).match(/[ÃÂâð�]/g)||[]).length;
+  const recodeLatin1=t=>{
+    const bytes=Uint8Array.from(String(t),ch=>ch.charCodeAt(0)&0xff);
+    return new TextDecoder('utf-8').decode(bytes);
+  };
+
+  let out=String(s);
+  for(let i=0;i<3;i++){
+    const recoded=recodeLatin1(out);
+    if(score(recoded)<score(out))out=recoded;else break;
+  }
+
+  return out
+    .replace(/\u001d/g,'—')
+    .replace(/�+/g,'')
     .replace(/â€”/g,'—').replace(/â€“/g,'–').replace(/â€¦/g,'…').replace(/â€¢/g,'•')
     .replace(/â†’/g,'→').replace(/âœ•/g,'✕').replace(/â¬†/g,'⬆')
-    .replace(/ðŸ“‹/g,'📋').replace(/ðŸ‘¨â€âš•ï¸/g,'👨‍⚕️');
+    .replace(/Â·/g,'·').replace(/Â°/g,'°').replace(/Â /g,' ')
+    .trimEnd();
+}
+
+function normalizeCatalogs(){
+  for(let i=0;i<CATS.length;i++)CATS[i]=fixMojibakeText(CATS[i]);
+  for(let i=0;i<STATUTS.length;i++)STATUTS[i]=fixMojibakeText(STATUTS[i]);
+  for(let i=0;i<MONTHS.length;i++)MONTHS[i]=fixMojibakeText(MONTHS[i]);
+
+  const fixedColors={};
+  Object.entries(CAT_COLORS).forEach(([k,v])=>{fixedColors[fixMojibakeText(k)]=v;});
+  Object.keys(CAT_COLORS).forEach(k=>delete CAT_COLORS[k]);
+  Object.assign(CAT_COLORS,fixedColors);
+}
+
+function normalizeLoadedEntries(entries){
+  if(!Array.isArray(entries))return [];
+  return entries.map(e=>{
+    if(!e||typeof e!=='object')return e;
+    const out={...e};
+    ['praticien','categorie','acte','statut','notes','source','date'].forEach(k=>{
+      if(typeof out[k]==='string')out[k]=fixMojibakeText(out[k]);
+    });
+    return out;
+  });
 }
 
 function normalizeUiText(root=document.body){
@@ -646,7 +685,7 @@ function normalizeUiText(root=document.body){
   }
   toPatch.forEach(([n,v])=>{n.nodeValue=v;});
 
-  const attrs=['placeholder','title','aria-label','value'];
+  const attrs=['placeholder','title','aria-label'];
   root.querySelectorAll('*').forEach(el=>{
     attrs.forEach(a=>{
       const v=el.getAttribute&&el.getAttribute(a);
@@ -654,7 +693,27 @@ function normalizeUiText(root=document.body){
       const fixed=fixMojibakeText(v);
       if(fixed!==v)el.setAttribute(a,fixed);
     });
+    if(typeof el.value==='string'){
+      const fixedValue=fixMojibakeText(el.value);
+      if(fixedValue!==el.value)el.value=fixedValue;
+    }
   });
+}
+
+function startUiTextAutoNormalize(){
+  if(window.__santesuiviTextFixReady)return;
+  window.__santesuiviTextFixReady=true;
+  let queued=false;
+  const run=()=>{
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(()=>{
+      queued=false;
+      normalizeUiText();
+    });
+  };
+  const obs=new MutationObserver(run);
+  obs.observe(document.body,{childList:true,subtree:true,characterData:true});
 }
 
 function flashRealtimePulse(){
@@ -734,6 +793,8 @@ let searchCatFilter=null;
 // ============================================================
 function init(){
   setupRealtimeSync();
+  startUiTextAutoNormalize();
+  normalizeCatalogs();
   // seed demo data
   if(!ld().length){
     const demo=[
@@ -806,7 +867,7 @@ function setPeriod(p,btn){
     document.querySelectorAll('#db-period-buttons .pbtn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   }
-  document.getElementById('db-period-label').textContent=(p==='all'?'Toutes annÃ©es':p)+' Â· toutes catÃ©gories';
+  document.getElementById('db-period-label').textContent=(p==='all'?'Toutes ann�es':p)+' � toutes cat�gories';
   renderDashboard();
 }
 
@@ -836,17 +897,17 @@ function renderDashboard(){
   const racMois=ld().filter(e=>e.date&&e.date.startsWith(yr+'-'+String(mNow()).padStart(2,'0'))).reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
   let alerts='';
   if(racMois>(cfg.seuil_rac_mensuel||200))alerts+=`<div class="alert alert-warn">RAC ce mois : ${fmt(racMois)} â€” seuil de ${fmt(cfg.seuil_rac_mensuel||200)} dÃ©passÃ©</div>`;
-  (cfg.plafonds||[]).forEach(p=>{const c=bycat[p.categorie]||0;const pct=p.montant>0?c/p.montant*100:0;if(pct>=90)alerts+=`<div class="alert alert-danger">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommÃ© (${fmt(c)}/${fmt(p.montant)})</div>`;else if(pct>=70)alerts+=`<div class="alert alert-warn">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommÃ©</div>`;});
+  (cfg.plafonds||[]).forEach(p=>{const c=bycat[p.categorie]||0;const pct=p.montant>0?c/p.montant*100:0;if(pct>=90)alerts+=`<div class="alert alert-danger">Plafond ${p.categorie} : ${pct.toFixed(0)}% consomm� (${fmt(c)}/${fmt(p.montant)})</div>`;else if(pct>=70)alerts+=`<div class="alert alert-warn">Plafond ${p.categorie} : ${pct.toFixed(0)}% consomm�</div>`;});
   // tp validity
   const tp=ltp();
-  if(tp.validite){const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));if(diff<30&&diff>=0)alerts+=`<div class="alert alert-warn">Carte tiers payant expire dans ${diff} jour${diff>1?'s':''}</div>`;else if(diff<0)alerts+=`<div class="alert alert-danger">Carte tiers payant expirÃ©e depuis ${-diff} jour${-diff>1?'s':''}</div>`;}
+  if(tp.validite){const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));if(diff<30&&diff>=0)alerts+=`<div class="alert alert-warn">Carte tiers payant expire dans ${diff} jour${diff>1?'s':''}</div>`;else if(diff<0)alerts+=`<div class="alert alert-danger">Carte tiers payant expir�e depuis ${-diff} jour${-diff>1?'s':''}</div>`;}
   document.getElementById('db-alerts').innerHTML=alerts;
   // metrics
   document.getElementById('db-metrics').innerHTML=`
-    <div class="mc"><div class="mc-label">Total dÃ©pensÃ©</div><div class="mc-val">${fmts(m.total)}</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
-    <div class="mc"><div class="mc-label">Remb. SÃ©cu</div><div class="mc-val pos">${fmts(m.secu)}</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
+    <div class="mc"><div class="mc-label">Total d�pens�</div><div class="mc-val">${fmts(m.total)}</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
+    <div class="mc"><div class="mc-label">Remb. S�cu</div><div class="mc-val pos">${fmts(m.secu)}</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
     <div class="mc"><div class="mc-label">Remb. mutuelle</div><div class="mc-val pos">${fmts(m.mut)}</div><div class="mc-sub">${m.total>0?(m.mut/m.total*100).toFixed(0):0}%</div></div>
-    <div class="mc"><div class="mc-label">Reste Ã  charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)}</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
+    <div class="mc"><div class="mc-label">Reste � charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)}</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
   renderDbTab('list');
 }
 
@@ -866,9 +927,9 @@ function renderDbTab(tab){
     const rows=entries.slice(0,20).map(e=>{
       const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);
       const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');
-      return`<tr><td style="color:var(--text3)">${e.date||'â€”'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'â€”'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente SÃ©cu'}</span></td></tr>`;
+      return`<tr><td style="color:var(--text3)">${e.date||'�'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'�'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente S�cu'}</span></td></tr>`;
     }).join('');
-    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entrÃ©es supplÃ©mentaires</div>`:''}`;
+    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entr�es suppl�mentaires</div>`:''}`;
   }
   if(tab==='chart'){
     const byM=Array(12).fill(0).map(()=>({d:0,r:0}));
@@ -881,7 +942,7 @@ function renderDbTab(tab){
     const grand=Object.values(bycat).reduce((s,v)=>s+v.t,0);
     const html=Object.entries(bycat).sort((a,b)=>b[1].t-a[1].t).map(([cat,v])=>{
       const pct=grand>0?v.t/grand*100:0;const rac=v.t-v.s-v.mu;const col=CAT_COLORS[cat]||'#888';
-      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>SÃ©cu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
+      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>S�cu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
     }).join('');
     document.getElementById('db-tab-cats').innerHTML=html||'<div class="empty-state">Aucune donnÃ©e</div>';
   }
@@ -922,7 +983,7 @@ async function handleFiles(fileList){
   if(!files.length)return;
   document.getElementById('aiProc').classList.add('on');
   document.getElementById('aiResult').classList.remove('on');
-  document.querySelector('#aiProc span').textContent=`ChatGPT analyse ${files.length} document${files.length>1?'s':''}â€¦`;
+  document.querySelector('#aiProc span').textContent=`ChatGPT analyse ${files.length} document${files.length>1?'s':''}&`;
   try{
     const ctContent=lct().map(c=>c.nom+': '+c.content.slice(0,500)).join('\n\n');
     let extracted=[];
@@ -938,7 +999,7 @@ async function handleFiles(fileList){
       <div class="ai-field"><span class="ai-field-label">Lignes extraites</span><span style="font-weight:700">${pendingEntries.length}</span></div>
       <div class="ai-field"><span class="ai-field-label">PÃ©riode couverte</span><span style="font-weight:500">${years[0]} â†’ ${years[years.length-1]}</span></div>
       ${preview}
-      ${pendingEntries.length>8?`<div style="font-size:11px;color:var(--text3)">+${pendingEntries.length-8} lignes supplÃ©mentaires</div>`:''}
+      ${pendingEntries.length>8?`<div style="font-size:11px;color:var(--text3)">+${pendingEntries.length-8} lignes suppl�mentaires</div>`:''}
     `;
     document.getElementById('aiProc').classList.remove('on');
     document.getElementById('aiResult').classList.add('on');
@@ -1075,10 +1136,10 @@ function rMensuel(){
   const compY=years[years.indexOf(refY)+1]||null;
   const build=y=>{const m=Array(12).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const mi=parseInt(e.date.split('-')[1])-1;if(mi>=0&&mi<12){m[mi].t+=(+e.montant||0);m[mi].s+=(+e.remboursement_secu||0);m[mi].mu+=(+e.remboursement_mutuelle||0);}});return m;};
   const cur=build(refY);const prev=compY?build(compY):null;
-  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'â€”'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'â€”'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'â€”'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'�'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'�'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'�'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'�'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'�'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map((y,i)=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('mensuel')">${y}</button>`).join('')}</div>
-  <div class="card"><div class="card-title">SynthÃ¨se mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">Ã‰vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
-  <div class="card"><div class="card-title">DÃ©penses mensuelles${compY?' â€” '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="DÃ©penses mensuelles">.</canvas></div></div>`;
+  <div class="card"><div class="card-title">Synth�se mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">D�pens�</th><th class="r">S�cu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">�0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card"><div class="card-title">D�penses mensuelles${compY?' � '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="D�penses mensuelles">.</canvas></div></div>`;
   setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
@@ -1088,9 +1149,9 @@ function rTrimestriel(){
   const refY=anPeriod==='all'?years[0]:anPeriod;const compY=years[years.indexOf(refY)+1]||null;
   const buildQ=y=>{const q=Array(4).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const m=parseInt(e.date.split('-')[1])-1;const qi=Math.floor(m/3);if(qi>=0&&qi<4){q[qi].t+=(+e.montant||0);q[qi].s+=(+e.remboursement_secu||0);q[qi].mu+=(+e.remboursement_mutuelle||0);}});return q;};
   const cur=buildQ(refY);const prev=compY?buildQ(compY):null;
-  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'â€”'}</td><td class="r mono">${c.t>0?fmt(rac):'â€”'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'â€”'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'â€”'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'�'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'�'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'�'}</td><td class="r mono">${c.t>0?fmt(rac):'�'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'�'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'�'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map(y=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('trimestriel')">${y}</button>`).join('')}</div>
-  <div class="card"><div class="card-title">SynthÃ¨se trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">Ã‰vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="card"><div class="card-title">Synth�se trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">D�pens�</th><th class="r">S�cu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">�0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
   <div class="card"><div class="card-title">DÃ©penses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="DÃ©penses trimestrielles">.</canvas></div></div>`;
   setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
@@ -1101,7 +1162,7 @@ function rAnnuel(){
   const summaries=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const bycat={};ye.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+(+e.montant||0);});const top=Object.entries(bycat).sort((a,b)=>b[1]-a[1])[0];return{...s,year:y,rac:s.total-s.secu-s.mut,top};});
   const best=summaries.reduce((a,b)=>b.rac<a.rac?b:a,summaries[0]);
   el.innerHTML=summaries.map((s,i)=>{const prev=summaries[i+1];const d=prev?delta(s.total,prev.total):null;
-    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?` Â· principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">DÃ©pensÃ©</div><div class="mc-val">${fmts(s.total)}</div></div><div class="mc"><div class="mc-label">SÃ©cu</div><div class="mc-val pos">${fmts(s.secu)}</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)}</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)}</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
+    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?` � principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">D�pens�</div><div class="mc-val">${fmts(s.total)}</div></div><div class="mc"><div class="mc-label">S�cu</div><div class="mc-val pos">${fmts(s.secu)}</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)}</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)}</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
 }
 
 function rPratStats(){
@@ -1109,7 +1170,7 @@ function rPratStats(){
   const byP={};entries.forEach(e=>{const k=e.praticien||'Inconnu';if(!byP[k])byP[k]={t:0,s:0,mu:0,n:0,cat:e.categorie||'Autre',dates:[]};byP[k].t+=(+e.montant||0);byP[k].s+=(+e.remboursement_secu||0);byP[k].mu+=(+e.remboursement_mutuelle||0);byP[k].n++;if(e.date)byP[k].dates.push(e.date);});
   const sorted=Object.keys(byP).sort((a,b)=>byP[b].t-byP[a].t);
   const rows=sorted.map((p,i)=>{const v=byP[p];const rac=v.t-v.s-v.mu;const taux=v.t>0?(v.s+v.mu)/v.t*100:0;const [abg,atx]=avCol(i);const last=v.dates.sort().pop();
-    return`<div class="data-row"><div class="avatar" style="background:${abg};color:${atx}">${initials(p)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p}</div><div style="font-size:11px;color:var(--text3)">${v.n} visite${v.n>1?'s':''}${last?' Â· derniÃ¨re '+last:''}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(v.t)}</div><div style="font-size:11px;color:${rac>50?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)} Â· ${taux.toFixed(0)}%</div></div></div>`;}).join('');
+    return`<div class="data-row"><div class="avatar" style="background:${abg};color:${atx}">${initials(p)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p}</div><div style="font-size:11px;color:var(--text3)">${v.n} visite${v.n>1?'s':''}${last?' � derni�re '+last:''}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(v.t)}</div><div style="font-size:11px;color:${rac>50?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)} � ${taux.toFixed(0)}%</div></div></div>`;}).join('');
   el.innerHTML=`<div class="card"><div class="card-title">DÃ©penses par praticien</div>${rows||'<div class="empty-state">Aucune donnÃ©e</div>'}</div>`;
 }
 
@@ -1117,8 +1178,8 @@ function rRemboursements(){
   const entries=ld();const el=document.getElementById('an-remboursements');
   const pending=entries.filter(e=>e.statut!=='SoldÃ©').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const montantAtt=pending.reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
-  const rows=pending.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');return`<tr><td style="color:var(--text3)">${e.date||'â€”'}</td><td>${e.praticien||'â€”'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente SÃ©cu'}</span></td></tr>`;}).join('');
-  el.innerHTML=`<div class="metrics-grid"><div class="mc"><div class="mc-label">En attente</div><div class="mc-val warn">${pending.length}</div></div><div class="mc"><div class="mc-label">Montant att.</div><div class="mc-val ${montantAtt>100?'warn':''}">${fmt(montantAtt)}</div></div><div class="mc"><div class="mc-label">SoldÃ©s</div><div class="mc-val pos">${entries.filter(e=>e.statut==='SoldÃ©').length}</div></div></div>
+  const rows=pending.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente S�cu');return`<tr><td style="color:var(--text3)">${e.date||'�'}</td><td>${e.praticien||'�'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente S�cu'}</span></td></tr>`;}).join('');
+  el.innerHTML=`<div class="metrics-grid"><div class="mc"><div class="mc-label">En attente</div><div class="mc-val warn">${pending.length}</div></div><div class="mc"><div class="mc-label">Montant att.</div><div class="mc-val ${montantAtt>100?'warn':''}">${fmt(montantAtt)}</div></div><div class="mc"><div class="mc-label">Sold�s</div><div class="mc-val pos">${entries.filter(e=>e.statut==='Sold�').length}</div></div></div>
   <div class="card"><div class="card-title">En attente de remboursement</div>${pending.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th class="r">Montant</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div><div style="font-size:11px;color:var(--text3);margin-top:8px">Cliquez sur le statut pour le faire avancer</div>`:'<div class="empty-state">Aucun remboursement en attente</div>'}</div>`;
 }
 
@@ -1141,8 +1202,8 @@ function doSearch(q){
   const el=document.getElementById('srch-results');if(!el)return;
   if(!res.length){el.innerHTML='<div class="empty-state">Aucun rÃ©sultat</div>';return;}
   const rows=res.slice(0,50).map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');
-    return`<div class="data-row" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">${e.praticien||'â€”'}</span><span style="font-size:11px;color:var(--text3)">${e.date||''}</span><span class="status-pill ${STAT_CLS[si>=0?si:0]}">${e.statut||'En attente SÃ©cu'}</span></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${e.acte||''} ${e.notes?'Â· '+e.notes:''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-weight:500;font-variant-numeric:tabular-nums">${fmt(+e.montant||0)}</div><div style="font-size:11px;color:${rac>0?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}</div></div></div>`;}).join('');
-  el.innerHTML=`<div class="card"><div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">${res.length} rÃ©sultat${res.length>1?'s':''}</div>${rows}</div>`;
+    return`<div class="data-row" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">${e.praticien||'�'}</span><span style="font-size:11px;color:var(--text3)">${e.date||''}</span><span class="status-pill ${STAT_CLS[si>=0?si:0]}">${e.statut||'En attente S�cu'}</span></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${e.acte||''} ${e.notes?'� '+e.notes:''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-weight:500;font-variant-numeric:tabular-nums">${fmt(+e.montant||0)}</div><div style="font-size:11px;color:${rac>0?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}</div></div></div>`;}).join('');
+  el.innerHTML=`<div class="card"><div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">${res.length} r�sultat${res.length>1?'s':''}</div>${rows}</div>`;
 }
 
 // ============================================================
@@ -1153,7 +1214,7 @@ function renderPraticiens(){
   const byP={};entries.forEach(e=>{const k=e.praticien||'';if(k)byP[k]=(byP[k]||0)+(+e.montant||0);});
   if(!prats.length){el.innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">ðŸ‘¨â€âš•ï¸</div>Aucun praticien â€” cliquez sur + Ajouter</div></div>';return;}
   el.innerHTML=prats.map((p,i)=>{const [abg,atx]=avCol(i);const tot=byP[p.nom]||0;
-    return`<div class="card"><div style="display:flex;align-items:flex-start;gap:12px"><div class="avatar" style="background:${abg};color:${atx};width:44px;height:44px;font-size:14px;margin-top:2px">${initials(p.nom)}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${p.nom}</div><div style="font-size:12px;color:var(--text3)">${p.specialite||''} ${p.ville?'Â· '+p.ville:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">${p.tel?`<a href="tel:${p.tel}" style="font-size:12px;color:var(--accent)">${p.tel}</a>`:''} ${p.email?`<a href="mailto:${p.email}" style="font-size:12px;color:var(--accent)">${p.email}</a>`:''} ${p.rdv?`<a href="${p.rdv}" style="font-size:12px;color:var(--accent2)">Prendre RDV</a>`:''} ${p.rpps?`<span style="font-size:11px;color:var(--text3)">RPPS ${p.rpps}</span>`:''}</div>${p.notes?`<div style="font-size:12px;color:var(--text2);margin-top:5px;font-style:italic">${p.notes}</div>`:''}</div><div style="text-align:right;flex-shrink:0">${tot>0?`<div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(tot)}</div><div style="font-size:11px;color:var(--text3)">dÃ©pensÃ©s</div>`:''}<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openPratForm(${i})">Modifier</button><button class="btn btn-danger btn-sm" onclick="delPrat(${i})">Suppr.</button></div></div></div></div>`;}).join('');
+    return`<div class="card"><div style="display:flex;align-items:flex-start;gap:12px"><div class="avatar" style="background:${abg};color:${atx};width:44px;height:44px;font-size:14px;margin-top:2px">${initials(p.nom)}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${p.nom}</div><div style="font-size:12px;color:var(--text3)">${p.specialite||''} ${p.ville?'� '+p.ville:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">${p.tel?`<a href="tel:${p.tel}" style="font-size:12px;color:var(--accent)">${p.tel}</a>`:''} ${p.email?`<a href="mailto:${p.email}" style="font-size:12px;color:var(--accent)">${p.email}</a>`:''} ${p.rdv?`<a href="${p.rdv}" style="font-size:12px;color:var(--accent2)">Prendre RDV</a>`:''} ${p.rpps?`<span style="font-size:11px;color:var(--text3)">RPPS ${p.rpps}</span>`:''}</div>${p.notes?`<div style="font-size:12px;color:var(--text2);margin-top:5px;font-style:italic">${p.notes}</div>`:''}</div><div style="text-align:right;flex-shrink:0">${tot>0?`<div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(tot)}</div><div style="font-size:11px;color:var(--text3)">d�pens�s</div>`:''}<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openPratForm(${i})">Modifier</button><button class="btn btn-danger btn-sm" onclick="delPrat(${i})">Suppr.</button></div></div></div></div>`;}).join('');
 }
 
 function openPratForm(idx){
@@ -1198,14 +1259,14 @@ function renderTP(){
   const tp=ltp();
   const el=document.getElementById('tp-card-render');
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim());
-  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'â€”';
+  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'�';
 
   // validity alert
   let tpAlerts='';
   if(tp.validite){
     const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));
-    if(diff<0)tpAlerts=`<div class="alert alert-danger">Carte expirÃ©e depuis ${-diff} jour${-diff>1?'s':''} â€” renouvelez votre contrat</div>`;
-    else if(diff<30)tpAlerts=`<div class="alert alert-warn">Expire dans ${diff} jour${diff>1?'s':''} â€” pensez Ã  renouveler</div>`;
+    if(diff<0)tpAlerts=`<div class="alert alert-danger">Carte expir�e depuis ${-diff} jour${-diff>1?'s':''} � renouvelez votre contrat</div>`;
+    else if(diff<30)tpAlerts=`<div class="alert alert-warn">Expire dans ${diff} jour${diff>1?'s':''} � pensez � renouveler</div>`;
     else tpAlerts=`<div class="alert alert-ok">Carte valide jusqu'au ${validStr}</div>`;
   }
   document.getElementById('tp-alerts').innerHTML=tpAlerts;
@@ -1221,10 +1282,10 @@ function renderTP(){
         <div class="tp-row"><div class="tp-label">NÂ° adhÃ©rent</div><div class="tp-value" style="font-size:13px">${tp.adherent||'â€”'}</div></div>
         <div class="tp-row"><div class="tp-label">NÂ° SS</div><div class="tp-value" style="font-size:13px;word-break:break-all">${tp.nss||'â€”'}</div></div>
         ${tp.contrat?`<div class="tp-row"><div class="tp-label">Contrat</div><div class="tp-value" style="font-size:12px">${tp.contrat}</div></div>`:''}
-        ${tp.amo?`<div class="tp-row"><div class="tp-label">AMO / SÃ©cu</div><div class="tp-value" style="font-size:12px">${tp.amo}</div></div>`:''}
+        ${tp.amo?`<div class="tp-row"><div class="tp-label">AMO / S�cu</div><div class="tp-value" style="font-size:12px">${tp.amo}</div></div>`:''}
       </div>
       ${garanties.length?`<div class="tp-chips">${garanties.map(g=>`<div class="tp-chip">${g}</div>`).join('')}</div>`:''}
-      ${tp.tel?`<div style="margin-top:.75rem;font-size:11px;opacity:.6">TÃ©l. mutuelle : ${tp.tel}</div>`:''}
+      ${tp.tel?`<div style="margin-top:.75rem;font-size:11px;opacity:.6">T�l. mutuelle : ${tp.tel}</div>`:''}
       ${tp.qr?`<div style="margin-top:.5rem;font-size:11px;opacity:.6;word-break:break-all">${tp.qr}</div>`:''}
     </div>
   </div>`;
@@ -1232,7 +1293,7 @@ function renderTP(){
 
 function printTP(){
   const tp=ltp();
-  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'â€”';
+  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'�';
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`<li>${g}</li>`).join('');
   const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tiers Payant â€” ${tp.nom||''}</title>
   <style>body{margin:0;padding:20px;font-family:'Helvetica Neue',sans-serif;background:#f4f4f4}
@@ -1254,10 +1315,10 @@ function printTP(){
     <div><div class="sub">NÂ° adhÃ©rent</div><div class="val">${tp.adherent||'â€”'}</div></div>
     <div><div class="sub">NÂ° SÃ©curitÃ© sociale</div><div class="val" style="font-size:12px;word-break:break-all">${tp.nss||'â€”'}</div></div>
     ${tp.contrat?`<div><div class="sub">Contrat</div><div class="val">${tp.contrat}</div></div>`:''}
-    ${tp.amo?`<div><div class="sub">AMO / SÃ©cu</div><div class="val">${tp.amo}</div></div>`:''}
+    ${tp.amo?`<div><div class="sub">AMO / S�cu</div><div class="val">${tp.amo}</div></div>`:''}
   </div>
   ${garanties?`<div style="margin-top:14px"><div class="sub" style="margin-bottom:6px">Garanties</div><ul style="margin:0;padding-left:16px;font-size:12px;line-height:1.8">${garanties}</ul></div>`:''}
-  <div class="footer">${tp.tel?`TÃ©l : ${tp.tel}  `:''} ${tp.qr||''}</div>
+  <div class="footer">${tp.tel?`T�l : ${tp.tel}  `:''} ${tp.qr||''}</div>
   </div></body></html>`;
   const w=window.open('','_blank','width=460,height=700');w.document.write(html);w.document.close();setTimeout(()=>w.print(),300);
 }
@@ -1268,7 +1329,7 @@ function sendTPMail(){
   const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
   const subject=encodeURIComponent(`${nom} | ATTESTATION DE TIERS PAYANT | ValiditÃ© ${validStr}`);
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`  â€¢ ${g}`).join('\n');
-  const body=encodeURIComponent(`ATTESTATION DE TIERS PAYANT\n${'â”€'.repeat(35)}\n\nOrganisme : ${tp.organisme||'â€”'}\nTitulaire : ${nom}\nNÂ° adhÃ©rent : ${tp.adherent||'â€”'}\nNÂ° SS : ${tp.nss||'â€”'}\nContrat : ${tp.contrat||'â€”'}\nAMO / SÃ©cu : ${tp.amo||'â€”'}\nValiditÃ© : ${validStr}\n\nGaranties principales :\n${garanties||'â€”'}\n\nTÃ©l. mutuelle : ${tp.tel||'â€”'}\n${tp.qr?'RÃ©f : '+tp.qr:''}\n\nDocument gÃ©nÃ©rÃ© automatiquement par SantÃ©Suivi`);
+  const body=encodeURIComponent(`ATTESTATION DE TIERS PAYANT\n${'��'.repeat(35)}\n\nOrganisme : ${tp.organisme||'�'}\nTitulaire : ${nom}\nN� adh�rent : ${tp.adherent||'�'}\nN� SS : ${tp.nss||'�'}\nContrat : ${tp.contrat||'�'}\nAMO / S�cu : ${tp.amo||'�'}\nValidit� : ${validStr}\n\nGaranties principales :\n${garanties||'�'}\n\nT�l. mutuelle : ${tp.tel||'�'}\n${tp.qr?'R�f : '+tp.qr:''}\n\nDocument g�n�r� automatiquement par Sant�Suivi`);
   window.location.href=`mailto:?subject=${subject}&body=${body}`;
   const ok=document.getElementById('tp-send-ok');ok.textContent='Ouverture de votre messagerieâ€¦';ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
 }
@@ -1277,7 +1338,7 @@ function copyTPText(){
   const tp=ltp();
   const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR'):'';
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`â€¢ ${g}`).join('\n');
-  const txt=`TIERS PAYANT â€” ${tp.organisme||''}\nTitulaire : ${tp.nom||''}\nNÂ° adhÃ©rent : ${tp.adherent||''}\nNÂ° SS : ${tp.nss||''}\nValiditÃ© : ${validStr}\n${garanties?'Garanties :\n'+garanties:''}`;
+  const txt=`TIERS PAYANT � ${tp.organisme||''}\nTitulaire : ${tp.nom||''}\nN� adh�rent : ${tp.adherent||''}\nN� SS : ${tp.nss||''}\nValidit� : ${validStr}\n${garanties?'Garanties :\n'+garanties:''}`;
   navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>{const ok=document.getElementById('tp-send-ok');ok.textContent='Texte copiÃ© dans le presse-papiers';ok.style.display='flex';setTimeout(()=>ok.style.display='none',2500);});
 }
 
@@ -1338,9 +1399,9 @@ Document : ${c.content.slice(0,4000)}`}]})});
     const raw=data.content?.find(x=>x.type==='text')?.text||'{}';
     const parsed=parseAiJson(raw);
     let html=`<div style="font-size:12px;color:var(--text2)"><div style="font-weight:500;margin-bottom:8px;color:var(--text)">RÃ©sumÃ© automatique de "${c.nom}"</div>`;
-    if(parsed.informations_cles?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Informations clÃ©s</div>${parsed.informations_cles.map(i=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">â€¢ ${i}</div>`).join('')}</div>`;}
-    if(parsed.plafonds?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Plafonds dÃ©tectÃ©s</div>${parsed.plafonds.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.categorie||'?'} : ${fmt(p.montant||0)} / ${p.periode||'an'}</div>`).join('')}</div><button class="btn btn-primary btn-sm" onclick='applyPlafonds(${JSON.stringify(parsed.plafonds)})' style="margin-bottom:10px">Appliquer ces plafonds</button>`;}
-    if(parsed.points_attention?.length){html+=`<div><div class="card-subtitle" style="color:var(--warn)">Points d'attention</div>${parsed.points_attention.map(p=>`<div class="alert alert-warn" style="margin-bottom:4px;font-size:11px">â€¢ ${p}</div>`).join('')}</div>`;}
+    if(parsed.informations_cles?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Informations cl�s</div>${parsed.informations_cles.map(i=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">" ${i}</div>`).join('')}</div>`;}
+    if(parsed.plafonds?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Plafonds d�tect�s</div>${parsed.plafonds.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.categorie||'?'} : ${fmt(p.montant||0)} / ${p.periode||'an'}</div>`).join('')}</div><button class="btn btn-primary btn-sm" onclick='applyPlafonds(${JSON.stringify(parsed.plafonds)})' style="margin-bottom:10px">Appliquer ces plafonds</button>`;}
+    if(parsed.points_attention?.length){html+=`<div><div class="card-subtitle" style="color:var(--warn)">Points d'attention</div>${parsed.points_attention.map(p=>`<div class="alert alert-warn" style="margin-bottom:4px;font-size:11px">" ${p}</div>`).join('')}</div>`;}
     html+='</div>';res.innerHTML=html;
   }catch(err){res.innerHTML=`<div class="alert alert-danger">Erreur : ${err.message}</div>`;}
 }
@@ -1369,7 +1430,7 @@ function exportCSV(){
   const rows=data.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const taux=(+e.montant||0)>0?((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))/(+e.montant||0)*100:0;return[e.date||'',e.praticien||'',e.categorie||'',e.acte||'',(+e.montant||0).toFixed(2),(+e.remboursement_secu||0).toFixed(2),(+e.remboursement_mutuelle||0).toFixed(2),rac.toFixed(2),taux.toFixed(0),e.statut||'',e.notes||'',e.source||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';');});
   const csv='\uFEFF'+headers.join(';')+'\n'+rows.join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`sante_${yr==='all'?'tout':yr}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);
-  const ok=document.getElementById('exp-ok');ok.textContent=`${data.length} ligne${data.length>1?'s':''} exportÃ©e${data.length>1?'s':''}`;ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
+  const ok=document.getElementById('exp-ok');ok.textContent=`${data.length} ligne${data.length>1?'s':''} export�e${data.length>1?'s':''}`;ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
 }
 
 function exportPraticiens(){
@@ -1387,7 +1448,7 @@ function exportFullBackup(){
 function renderExpSummary(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('exp-annual-table');
   if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
-  el.innerHTML=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('')||'<div class="empty-state">Aucune donnÃ©e</div>';
+  el.innerHTML=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('')||'<div class="empty-state">Aucune donn�e</div>';
 }
 
 // Fix typo in rTrimestriel (y axis key)
@@ -1398,5 +1459,3 @@ window.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
-
-
