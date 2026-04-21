@@ -198,13 +198,14 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 
 <nav id="topnav">
   <div class="tn-logo">SantÃ©<span>Suivi</span></div>
-  <button class="navbtn active" onclick="nav('dashboard',this)">Tableau de bord</button>
-  <button class="navbtn" onclick="nav('saisie',this)">Saisie</button>
-  <button class="navbtn" onclick="nav('analyses',this)">Analyses</button>
-  <button class="navbtn" onclick="nav('praticiens',this)">Praticiens</button>
-  <button class="navbtn" onclick="nav('tiers',this)">Tiers payant</button>
-  <button class="navbtn" onclick="nav('contrat',this)">Contrat</button>
-  <button class="navbtn" onclick="nav('export',this)">Export</button>
+  <button class="navbtn active" data-page="dashboard" onclick="nav('dashboard',this)">Tableau de bord</button>
+  <button class="navbtn" data-page="saisie" onclick="nav('saisie',this)">Saisie</button>
+  <button class="navbtn" data-page="analyses" onclick="nav('analyses',this)">Analyses</button>
+  <button class="navbtn" data-page="detail" onclick="nav('detail',this)">Détail prestation</button>
+  <button class="navbtn" data-page="praticiens" onclick="nav('praticiens',this)">Praticiens</button>
+  <button class="navbtn" data-page="tiers" onclick="nav('tiers',this)">Tiers payant</button>
+  <button class="navbtn" data-page="contrat" onclick="nav('contrat',this)">Contrat</button>
+  <button class="navbtn" data-page="export" onclick="nav('export',this)">Export</button>
 </nav>
 
 <div id="main">
@@ -250,6 +251,21 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div id="db-tab-chart" style="display:none"><div class="chart-wrap" style="height:240px"><canvas id="c-db-main" role="img" aria-label="DÃ©penses mensuelles">.</canvas></div></div>
     <div id="db-tab-cats" style="display:none" id="db-tab-cats"></div>
   </div>
+</div>
+
+<!-- ============================================================ DETAIL PRESTATION -->
+<div id="p-detail" class="page">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Détail prestation</div>
+      <div class="section-sub">Complétez manuellement les champs manquants (praticien, références, garanties, etc.)</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openLatestEntryDetail()">Ouvrir la dernière</button>
+      <button class="btn btn-danger" onclick="deleteCurrentDetailEntry()">Supprimer cette prestation</button>
+    </div>
+  </div>
+  <div id="detail-wrap"></div>
 </div>
 
 <!-- ============================================================ SAISIE -->
@@ -407,6 +423,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
       <button class="btn btn-gold" onclick="copySyncCode()">Copier code synchro mobile</button>
       <button class="btn btn-secondary" onclick="pasteSyncCode()">Coller code synchro mobile</button>
+      <button class="btn btn-danger" onclick="deleteSelectedYear()">Supprimer année sélectionnée</button>
       <button class="btn btn-secondary" onclick="downloadIntegratedSchema()">Télécharger schéma JSON intégré</button>
       <button class="btn btn-secondary" onclick="copyIntegratedSchema()">Copier schéma JSON intégré</button>
       <button class="btn btn-danger" onclick="resetAllData()">Remise Ã  zÃ©ro complÃ¨te</button>
@@ -892,6 +909,7 @@ function refreshVisibleSections(){
   buildPratDatalist();
   const active=document.querySelector('.page.active')?.id;
   if(active==='p-analyses')renderAnalyse(anSubview);
+  if(active==='p-detail')renderEntryDetail();
   if(active==='p-praticiens')renderPraticiens();
   if(active==='p-tiers')renderTP();
   if(active==='p-contrat'){renderContracts();renderPlafonds();}
@@ -950,6 +968,7 @@ let currentPeriod=yrNow();
 let anSubview='comparaison';
 let anPeriod='all';
 let searchCatFilter=null;
+let currentDetailEntryId=null;
 
 // ============================================================
 // INIT
@@ -962,6 +981,7 @@ function init(){
   const existing=ld();
   const cleaned=dedupeEntries(existing);
   if(cleaned.length!==existing.length)sd(cleaned);
+  currentDetailEntryId=(cleaned[0]||existing[0]||{}).id??null;
   // populate selects
   const smCat=document.getElementById('sm-cat');
   CATS.forEach(c=>{const o=document.createElement('option');o.value=c;o.text=c;smCat.appendChild(o);});
@@ -998,8 +1018,10 @@ function nav(page,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   document.getElementById('p-'+page).classList.add('active');
-  btn.classList.add('active');
+  const targetBtn=btn||document.querySelector(`.navbtn[data-page="${page}"]`);
+  if(targetBtn)targetBtn.classList.add('active');
   if(page==='analyses')renderAnalyse(anSubview);
+  if(page==='detail')renderEntryDetail();
   if(page==='praticiens')renderPraticiens();
   if(page==='export'){updateExpYears();renderExpSummary();}
   if(page==='contrat'){renderContracts();renderPlafonds();}
@@ -1077,9 +1099,9 @@ function renderDbTab(tab){
     const rows=entries.slice(0,20).map(e=>{
       const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);
       const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');
-      return`<tr><td style="color:var(--text3)">${e.date||'�'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'�'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente S�cu'}</span></td></tr>`;
+      return`<tr><td style="color:var(--text3)">${e.date||'�'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'�'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente S�cu'}</span></td><td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openEntryDetail(${e.id})">Détail</button><button class="btn btn-danger btn-sm" onclick="deleteEntryById(${e.id})">Suppr.</button></div></td></tr>`;
     }).join('');
-    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entr�es suppl�mentaires</div>`:''}`;
+    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th><th class="r">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entr�es suppl�mentaires</div>`:''}`;
   }
   if(tab==='chart'){
     const byM=Array(12).fill(0).map(()=>({d:0,r:0}));
@@ -1698,6 +1720,152 @@ function pasteSyncCode(){
   }
 }
 
+function getEntryById(id){
+  const n=Number(id);
+  return ld().find(e=>Number(e.id)===n)||null;
+}
+
+function openLatestEntryDetail(){
+  const entries=ld().slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  currentDetailEntryId=entries[0]?.id??null;
+  nav('detail');
+}
+
+function openEntryDetail(id){
+  currentDetailEntryId=id;
+  nav('detail');
+}
+
+function deleteEntryById(id,silent){
+  const n=Number(id);
+  if(!silent){
+    const ok=confirm('Supprimer cet enregistrement ?');
+    if(!ok)return;
+  }
+  const data=ld();
+  const next=data.filter(e=>Number(e.id)!==n);
+  if(next.length===data.length)return;
+  sd(next);
+  if(Number(currentDetailEntryId)===n)currentDetailEntryId=next[0]?.id??null;
+  refreshVisibleSections();
+}
+
+function deleteCurrentDetailEntry(){
+  if(currentDetailEntryId==null)return;
+  deleteEntryById(currentDetailEntryId,false);
+}
+
+function deleteSelectedYear(){
+  const yrEl=document.getElementById('exp-yr');
+  const yr=yrEl?yrEl.value:'all';
+  if(!yr||yr==='all'){showExpOk('Sélectionnez une année précise à supprimer.',true);return;}
+  const data=ld();
+  const count=data.filter(e=>e.date&&String(e.date).startsWith(yr)).length;
+  if(!count){showExpOk(`Aucune ligne à supprimer pour ${yr}.`,true);return;}
+  const ok=confirm(`Supprimer toutes les ${count} lignes de ${yr} ?`);
+  if(!ok)return;
+  sd(data.filter(e=>!(e.date&&String(e.date).startsWith(yr))));
+  if(getEntryById(currentDetailEntryId)==null)currentDetailEntryId=ld()[0]?.id??null;
+  updateExpYears();
+  renderExpSummary();
+  refreshVisibleSections();
+  showExpOk(`${count} ligne(s) supprimée(s) pour ${yr}.`,false);
+}
+
+function detailFieldOptions(field){
+  const map={
+    categorie:INTEGRATED_SCHEMA.valeurs.categorie,
+    statut:INTEGRATED_SCHEMA.valeurs.statut,
+    source_type:INTEGRATED_SCHEMA.valeurs.source_type,
+    type_garantie:INTEGRATED_SCHEMA.valeurs.type_garantie,
+    type_panier:INTEGRATED_SCHEMA.valeurs.type_panier,
+    secteur_medecin:INTEGRATED_SCHEMA.valeurs.secteur_medecin,
+    beneficiaire_type:INTEGRATED_SCHEMA.valeurs.beneficiaire_type,
+    reseau_soins:INTEGRATED_SCHEMA.valeurs.reseau_soins,
+    cause_ecart:INTEGRATED_SCHEMA.valeurs.cause_ecart,
+    anomalie_type:INTEGRATED_SCHEMA.valeurs.anomalie_type,
+  };
+  return map[field]||null;
+}
+
+function renderDetailField(field,val){
+  const opts=detailFieldOptions(field);
+  const safe=val==null?'':String(val);
+  const isNum=/(montant|taux|base|plafond|cumul|reste|depense|remboursement|ecart|age)/i.test(field);
+  const isBool=/(_present|_possible|_correctement|_respectee|_atteint|_eligible|_inclut|_blocage|_payant|_manual|_manuellement|_anomalie)/i.test(field);
+  if(opts){
+    return `<select data-field="${field}"><option value=""></option>${opts.map(o=>`<option value="${String(o).replace(/"/g,'&quot;')}" ${safe===String(o)?'selected':''}>${o}</option>`).join('')}</select>`;
+  }
+  if(isBool){
+    return `<select data-field="${field}"><option value="" ${safe===''?'selected':''}></option><option value="true" ${safe==='true'?'selected':''}>Oui</option><option value="false" ${safe==='false'?'selected':''}>Non</option></select>`;
+  }
+  if(isNum){
+    return `<input type="number" step="0.01" data-field="${field}" value="${safe.replace(/"/g,'&quot;')}">`;
+  }
+  if(/date/.test(field)){
+    return `<input type="date" data-field="${field}" value="${safe}">`;
+  }
+  return `<input type="text" data-field="${field}" value="${safe.replace(/"/g,'&quot;')}">`;
+}
+
+function renderEntryDetail(){
+  const wrap=document.getElementById('detail-wrap');
+  if(!wrap)return;
+  const entries=ld();
+  if(!entries.length){
+    wrap.innerHTML='<div class="card"><div class="empty-state">Aucune prestation enregistrée.</div></div>';
+    return;
+  }
+  if(currentDetailEntryId==null||!getEntryById(currentDetailEntryId))currentDetailEntryId=entries.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0].id;
+  const raw=getEntryById(currentDetailEntryId);
+  if(!raw){wrap.innerHTML='<div class="card"><div class="empty-state">Prestation introuvable.</div></div>';return;}
+  const e=applyIntegratedSchemaToEntry(raw);
+  const missing=validateEntryMinimalFields(e);
+  const sections=[
+    ['base','Informations de base'],
+    ['montants','Montants'],
+    ['contrat_garantie','Garanties / contrat'],
+    ['conformite','Conformité'],
+    ['plafonds','Plafonds et cumuls'],
+    ['reseau','Réseau'],
+    ['justificatifs','Justificatifs'],
+    ['exclusions','Exclusions'],
+    ['beneficiaires','Bénéficiaire'],
+    ['controles','Contrôles automatiques'],
+  ];
+  const selector=`<div class="card"><div class="field"><label>Prestation à éditer</label><select id="detail-entry-select" onchange="openEntryDetail(this.value)">${entries.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(x=>`<option value="${x.id}" ${Number(x.id)===Number(currentDetailEntryId)?'selected':''}>${x.date||'—'} · ${x.praticien||'Praticien non précisé'} · ${x.acte||'Acte'}</option>`).join('')}</select></div><div class="alert ${missing.length?'alert-warn':'alert-ok'}">${missing.length?`Champs minimaux manquants: ${missing.slice(0,8).join(', ')}${missing.length>8?'…':''}`:'Champs minimaux de contrôle complets pour cette prestation.'}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="saveEntryDetail()">Enregistrer les modifications</button><button class="btn btn-secondary" onclick="openLatestEntryDetail()">Aller à la dernière prestation</button></div></div>`;
+  const cards=sections.map(([k,label])=>{
+    const fields=INTEGRATED_SCHEMA.champs[k]||[];
+    const rows=fields.map(f=>`<div class="field" style="margin-bottom:8px"><label>${f}</label>${renderDetailField(f,e[f])}</div>`).join('');
+    return `<div class="card"><div class="card-title">${label}</div><div class="fg2">${rows}</div></div>`;
+  }).join('');
+  wrap.innerHTML=`${selector}<form id="detail-form">${cards}</form>`;
+}
+
+function saveEntryDetail(){
+  if(currentDetailEntryId==null)return;
+  const data=ld();
+  const idx=data.findIndex(e=>Number(e.id)===Number(currentDetailEntryId));
+  if(idx<0)return;
+  const updated={...data[idx]};
+  document.querySelectorAll('#detail-form [data-field]').forEach(el=>{
+    const k=el.getAttribute('data-field');
+    let v=el.value;
+    if(v==='')v=null;
+    if(v==='true')v=true;
+    else if(v==='false')v=false;
+    else if(v!==null&&el.type==='number')v=Number(v);
+    updated[k]=v;
+  });
+  if(updated.date_soin&&!updated.date)updated.date=updated.date_soin;
+  if(updated.depense_reelle!=null)updated.montant=Number(updated.depense_reelle)||0;
+  if(updated.remboursement_complementaire!=null)updated.remboursement_mutuelle=Number(updated.remboursement_complementaire)||0;
+  data[idx]=applyIntegratedSchemaToEntry(updated);
+  sd(dedupeEntries(data));
+  showExpOk('Prestation mise à jour.',false);
+  renderEntryDetail();
+}
+
 function resetAllData(){
   const ok=confirm("Cette action va supprimer toutes les donnÃ©es locales (soins, praticiens, carte tiers payant, contrats). Continuer ?");
   if(!ok)return;
@@ -1705,6 +1873,7 @@ function resetAllData(){
     [SK,PK,CFG,TPK,CTK,ENTRIES_UPDATED_KEY].forEach(k=>localStorage.removeItem(k));
   }catch{}
   pendingEntries=[];
+  currentDetailEntryId=null;
   resetSaisie();
   renderDashboard();
   renderTP();
