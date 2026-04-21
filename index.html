@@ -262,9 +262,9 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
       <div class="field"><label>CatÃ©gorie</label><select id="sm-cat"></select></div>
       <div class="field"><label>Praticien</label><input id="sm-prat" list="sm-prat-list" placeholder="Nomâ€¦"><datalist id="sm-prat-list"></datalist></div>
       <div class="field"><label>Acte / description</label><input id="sm-acte" placeholder="Consultation, mÃ©dicamentsâ€¦"></div>
-      <div class="field"><label>Montant payÃ© (â‚¬)</label><input type="number" id="sm-mnt" placeholder="0.00" min="0" step="0.01" oninput="updateRACPreview()"></div>
-      <div class="field"><label>Remb. SÃ©cu (â‚¬)</label><input type="number" id="sm-secu" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
-      <div class="field"><label>Remb. mutuelle (â‚¬)</label><input type="number" id="sm-mut" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
+      <div class="field"><label>Montant payÃ© (€)</label><input type="number" id="sm-mnt" placeholder="0.00" min="0" step="0.01" oninput="updateRACPreview()"></div>
+      <div class="field"><label>Remb. SÃ©cu (€)</label><input type="number" id="sm-secu" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
+      <div class="field"><label>Remb. mutuelle (€)</label><input type="number" id="sm-mut" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
       <div class="field"><label>Statut</label><select id="sm-stat"></select></div>
     </div>
     <div class="field"><label>Notes</label><textarea id="sm-notes" placeholder="NumÃ©ro de feuille, observationsâ€¦"></textarea></div>
@@ -330,7 +330,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
       <div class="field"><label>TÃ©lÃ©phone mutuelle</label><input id="tp-tel" placeholder="0800 xxx xxx" oninput="saveTp();renderTP()"></div>
       <div class="field"><label>AMO (SÃ©cu)</label><input id="tp-amo" placeholder="Caisse d'affiliation" oninput="saveTp();renderTP()"></div>
     </div>
-    <div class="field"><label>Garanties (une par ligne)</label><textarea id="tp-garanties" placeholder="Hospitalisation 100%&#10;Optique 200â‚¬/an&#10;Dentaire 150%" oninput="saveTp();renderTP()"></textarea></div>
+    <div class="field"><label>Garanties (une par ligne)</label><textarea id="tp-garanties" placeholder="Hospitalisation 100%&#10;Optique 200€/an&#10;Dentaire 150%" oninput="saveTp();renderTP()"></textarea></div>
     <div class="field"><label>QR Code / informations complÃ©mentaires</label><input id="tp-qr" placeholder="Code, URL ou rÃ©fÃ©rence" oninput="saveTp();renderTP()"></div>
   </div>
   <div class="card">
@@ -379,11 +379,11 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div class="card-subtitle" style="margin-top:1rem">Ajouter un plafond manuel</div>
     <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
       <div class="field" style="margin:0;flex:1;min-width:130px"><label>CatÃ©gorie</label><select id="pl-cat"></select></div>
-      <div class="field" style="margin:0;width:110px"><label>Plafond (â‚¬)</label><input type="number" id="pl-mnt" placeholder="500" min="0" step="10"></div>
+      <div class="field" style="margin:0;width:110px"><label>Plafond (€)</label><input type="number" id="pl-mnt" placeholder="500" min="0" step="10"></div>
       <button class="btn btn-primary" onclick="addPlafond()">Ajouter</button>
     </div>
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
-      <div class="field"><label>Seuil d'alerte RAC mensuel (â‚¬)</label><input type="number" id="seuil-rac" placeholder="200" min="0" step="10"></div>
+      <div class="field"><label>Seuil d'alerte RAC mensuel (€)</label><input type="number" id="seuil-rac" placeholder="200" min="0" step="10"></div>
       <button class="btn btn-secondary btn-sm" onclick="saveSeuil()">Enregistrer le seuil</button>
     </div>
   </div>
@@ -454,8 +454,8 @@ function stp(d){try{localStorage.setItem(TPK,JSON.stringify(d));}catch{}}
 function lct(){try{return JSON.parse(localStorage.getItem(CTK))||[];}catch{return[];}}
 function sct(d){try{localStorage.setItem(CTK,JSON.stringify(d));}catch{}}
 
-function fmt(n){return(+n||0).toFixed(2).replace('.',',')+'\u202fâ‚¬';}
-function fmts(n){return(+n||0).toFixed(0)+'\u202fâ‚¬';}
+function fmt(n){return(+n||0).toFixed(2).replace('.',',')+'\\u202f\\u20AC';}
+function fmts(n){return(+n||0).toFixed(0)+'\\u202f\\u20AC';}
 function initials(n){return(n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');}
 function avCol(i){return AV_COLORS[i%AV_COLORS.length];}
 function today(){return new Date().toISOString().slice(0,10);}
@@ -492,7 +492,7 @@ function isCoverageYear(y){
 
 function parseAmount(v){
   if(typeof v==='number')return Number.isFinite(v)?Math.max(0,v):0;
-  const s=String(v||'').replace(/\u00a0/g,'').replace(/\s/g,'').replace(/â‚¬/g,'').replace(',', '.').replace(/[^0-9.-]/g,'');
+  const s=String(v||'').replace(/\u00a0/g,'').replace(/\s/g,'').replace(/€/g,'').replace(',', '.').replace(/[^0-9.-]/g,'');
   const n=parseFloat(s);
   return Number.isFinite(n)?Math.max(0,n):0;
 }
@@ -804,10 +804,10 @@ function renderDashboard(){
   document.getElementById('db-alerts').innerHTML=alerts;
   // metrics
   document.getElementById('db-metrics').innerHTML=`
-    <div class="mc"><div class="mc-label">Total dÃ©pensÃ©</div><div class="mc-val">${fmts(m.total)} â‚¬</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
-    <div class="mc"><div class="mc-label">Remb. SÃ©cu</div><div class="mc-val pos">${fmts(m.secu)} â‚¬</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
-    <div class="mc"><div class="mc-label">Remb. mutuelle</div><div class="mc-val pos">${fmts(m.mut)} â‚¬</div><div class="mc-sub">${m.total>0?(m.mut/m.total*100).toFixed(0):0}%</div></div>
-    <div class="mc"><div class="mc-label">Reste Ã  charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)} â‚¬</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
+    <div class="mc"><div class="mc-label">Total dÃ©pensÃ©</div><div class="mc-val">${fmts(m.total)}</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
+    <div class="mc"><div class="mc-label">Remb. SÃ©cu</div><div class="mc-val pos">${fmts(m.secu)}</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
+    <div class="mc"><div class="mc-label">Remb. mutuelle</div><div class="mc-val pos">${fmts(m.mut)}</div><div class="mc-sub">${m.total>0?(m.mut/m.total*100).toFixed(0):0}%</div></div>
+    <div class="mc"><div class="mc-label">Reste Ã  charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)}</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
   renderDbTab('list');
 }
 
@@ -835,7 +835,7 @@ function renderDbTab(tab){
     const byM=Array(12).fill(0).map(()=>({d:0,r:0}));
     entries.forEach(e=>{if(!e.date)return;const m=parseInt(e.date.split('-')[1])-1;if(m>=0&&m<12){byM[m].d+=(+e.montant||0);byM[m].r+=(+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0);}});
     if(charts['db-main']){charts['db-main'].destroy();}
-    setTimeout(()=>{charts['db-main']=new Chart(document.getElementById('c-db-main'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'DÃ©pensÃ©',data:byM.map(m=>+m.d.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3},{label:'RemboursÃ©',data:byM.map(m=>+m.r.toFixed(2)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+    setTimeout(()=>{charts['db-main']=new Chart(document.getElementById('c-db-main'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'DÃ©pensÃ©',data:byM.map(m=>+m.d.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3},{label:'RemboursÃ©',data:byM.map(m=>+m.r.toFixed(2)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
   }
   if(tab==='cats'){
     const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';if(!bycat[k])bycat[k]={t:0,s:0,mu:0};bycat[k].t+=(+e.montant||0);bycat[k].s+=(+e.remboursement_secu||0);bycat[k].mu+=(+e.remboursement_mutuelle||0);});
@@ -1022,10 +1022,10 @@ function rComparaison(){
   setTimeout(()=>{
     if(charts['comp']){charts['comp'].destroy();}
     const yrS=[...years].reverse();
-    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'DÃ©pensÃ©',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.total-s.secu-s.mut).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});
+    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'DÃ©pensÃ©',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.total-s.secu-s.mut).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
     if(charts['comp-cat']){charts['comp-cat'].destroy();}
     const catDS=CATS.map(cat=>({label:cat,data:yrS.map(y=>+(byY[y].filter(e=>e.categorie===cat).reduce((s,e)=>s+(+e.montant||0),0)).toFixed(2)),backgroundColor:CAT_COLORS[cat]+'AA',borderRadius:2})).filter(d=>d.data.some(v=>v>0));
-    charts['comp-cat']=new Chart(document.getElementById('c-comp-cat'),{type:'bar',data:{labels:yrS,datasets:catDS},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},color:'#9E9B96',boxWidth:10,padding:6}}},scales:{x:{stacked:true,ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{stacked:true,ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});
+    charts['comp-cat']=new Chart(document.getElementById('c-comp-cat'),{type:'bar',data:{labels:yrS,datasets:catDS},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},color:'#9E9B96',boxWidth:10,padding:6}}},scales:{x:{stacked:true,ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{stacked:true,ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
   },30);
 }
 
@@ -1040,7 +1040,7 @@ function rMensuel(){
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map((y,i)=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('mensuel')">${y}</button>`).join('')}</div>
   <div class="card"><div class="card-title">SynthÃ¨se mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">Ã‰vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
   <div class="card"><div class="card-title">DÃ©penses mensuelles${compY?' â€” '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="DÃ©penses mensuelles">.</canvas></div></div>`;
-  setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+  setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rTrimestriel(){
@@ -1053,7 +1053,7 @@ function rTrimestriel(){
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map(y=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('trimestriel')">${y}</button>`).join('')}</div>
   <div class="card"><div class="card-title">SynthÃ¨se trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">Ã‰vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
   <div class="card"><div class="card-title">DÃ©penses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="DÃ©penses trimestrielles">.</canvas></div></div>`;
-  setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+  setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rAnnuel(){
@@ -1062,7 +1062,7 @@ function rAnnuel(){
   const summaries=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const bycat={};ye.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+(+e.montant||0);});const top=Object.entries(bycat).sort((a,b)=>b[1]-a[1])[0];return{...s,year:y,rac:s.total-s.secu-s.mut,top};});
   const best=summaries.reduce((a,b)=>b.rac<a.rac?b:a,summaries[0]);
   el.innerHTML=summaries.map((s,i)=>{const prev=summaries[i+1];const d=prev?delta(s.total,prev.total):null;
-    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?` Â· principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">DÃ©pensÃ©</div><div class="mc-val">${fmts(s.total)} â‚¬</div></div><div class="mc"><div class="mc-label">SÃ©cu</div><div class="mc-val pos">${fmts(s.secu)} â‚¬</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)} â‚¬</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)} â‚¬</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
+    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?` Â· principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">DÃ©pensÃ©</div><div class="mc-val">${fmts(s.total)}</div></div><div class="mc"><div class="mc-label">SÃ©cu</div><div class="mc-val pos">${fmts(s.secu)}</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)}</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)}</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
 }
 
 function rPratStats(){
@@ -1326,7 +1326,7 @@ function exportCSV(){
   const entries=ld();const yr=document.getElementById('exp-yr').value;const cat=document.getElementById('exp-cat').value;const stat=document.getElementById('exp-stat').value;
   let data=entries;if(yr!=='all')data=data.filter(e=>e.date&&e.date.startsWith(yr));if(cat)data=data.filter(e=>e.categorie===cat);if(stat)data=data.filter(e=>(e.statut||'En attente SÃ©cu')===stat);
   data=data.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const headers=['Date','Praticien','CatÃ©gorie','Acte','Montant (â‚¬)','Remb. SÃ©cu (â‚¬)','Remb. Mutuelle (â‚¬)','RAC (â‚¬)','Taux couverture (%)','Statut','Notes','Source'];
+  const headers=['Date','Praticien','CatÃ©gorie','Acte','Montant (€)','Remb. SÃ©cu (€)','Remb. Mutuelle (€)','RAC (€)','Taux couverture (%)','Statut','Notes','Source'];
   const rows=data.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const taux=(+e.montant||0)>0?((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))/(+e.montant||0)*100:0;return[e.date||'',e.praticien||'',e.categorie||'',e.acte||'',(+e.montant||0).toFixed(2),(+e.remboursement_secu||0).toFixed(2),(+e.remboursement_mutuelle||0).toFixed(2),rac.toFixed(2),taux.toFixed(0),e.statut||'',e.notes||'',e.source||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';');});
   const csv='\uFEFF'+headers.join(';')+'\n'+rows.join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`sante_${yr==='all'?'tout':yr}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -1359,3 +1359,5 @@ window.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
+
+
