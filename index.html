@@ -623,6 +623,13 @@ function parseAmount(v){
   return Number.isFinite(n)?Math.max(0,n):0;
 }
 
+function parseSignedAmount(v){
+  if(typeof v==='number')return Number.isFinite(v)?v:0;
+  const s=String(v||'').replace(/\u00a0/g,'').replace(/\s/g,'').replace(/€/g,'').replace(',', '.').replace(/[^0-9.-]/g,'');
+  const n=parseFloat(s);
+  return Number.isFinite(n)?n:0;
+}
+
 function normalizeDate(raw,fallbackYear){
   const txt=String(raw||'').trim();
   if(!txt){
@@ -688,17 +695,50 @@ function normalizeStatut(raw,total,secu,mut){
   return 'En attente Sécu';
 }
 
+function inferSourceType(raw,fileName){
+  const txt=fixMojibakeText([
+    raw?.source_type,raw?.notes,raw?.statut,raw?.acte,raw?.contexte_acte,fileName,
+  ].filter(Boolean).join(' ')).toLowerCase();
+  if(/compl[eé]mentaire|mutuelle|amc|oc|roc/.test(txt))return 'releve_complementaire';
+  if(/cpam|s[ée]cu|securite sociale|assurance maladie|ameli|\bro\b/.test(txt))return 'releve_secu';
+  return 'facture';
+}
+
+function normalizeReimbursementBySource(sourceType,montant,secu,mut){
+  let s=+secu||0;
+  let m=+mut||0;
+  const t=String(sourceType||'').toLowerCase();
+
+  // If a complementary statement was parsed as "Sécu", remap it.
+  if(t==='releve_complementaire'&&m<=0&&s>0){
+    m=s;
+    s=0;
+  }
+  // Symmetric safeguard for CPAM statement parsed as mutuelle.
+  if(t==='releve_secu'&&s<=0&&m>0){
+    s=m;
+    m=0;
+  }
+
+  const engaged=Math.max(0,+montant||0);
+  s=Math.min(s,engaged);
+  m=Math.min(m,Math.max(0,engaged-s));
+  return{secu:s,mut:m};
+}
+
 function detectRetentionFromRaw(raw){
   const text=fixMojibakeText([
     raw?.acte,raw?.acte_code,raw?.contexte_acte,raw?.notes,raw?.statut,raw?.categorie,
   ].filter(Boolean).join(' ')).toLowerCase();
-  const isRetention=/(franchise|participation forfaitaire|pfh|pft|frh|frt|tm majore|forf non rembours|pap|retenir|retenue)/i.test(text);
+  const isRetention=/(franchise|participation forfaitaire|pfh|pft|frh|frt|tm majore|forf non rembours|pap|retenir|retenue|pr[eé]l[eè]vement diff[eé]r[eé]|prelevement differe)/i.test(text);
   if(!isRetention)return null;
 
-  const amountCandidates=[
+  const signedCandidates=[
     raw?.montant,raw?.montant_retenue,raw?.retenue,raw?.remboursement_secu,raw?.remboursement_mutuelle,
-  ];
-  const amount=Math.max(...amountCandidates.map(parseAmount),0);
+  ].map(parseSignedAmount).filter(Number.isFinite);
+  const amountFromNegative=Math.max(0,...signedCandidates.filter(v=>v<0).map(v=>Math.abs(v)));
+  const amountFromPositive=Math.max(0,...signedCandidates.filter(v=>v>0));
+  const amount=amountFromNegative>0?amountFromNegative:amountFromPositive;
   if(amount<=0)return null;
 
   return{
@@ -727,7 +767,7 @@ function applyRetentionDeductions(entries,deductions){
       const cut=Math.min(secu,remaining);
       t.remboursement_secu=+(secu-cut).toFixed(2);
       remaining=+(remaining-cut).toFixed(2);
-      const note=`Franchise déduite: ${fmt(cut)} (${d.label})`;
+      const note=`Franchise déduite: -${fmt(cut)} (${d.label})`;
       t.notes=[String(t.notes||'').trim(),note].filter(Boolean).join(' | ');
       t.statut=normalizeStatut(t.statut,+t.montant||0,+t.remboursement_secu||0,+t.remboursement_mutuelle||0);
     }
@@ -741,8 +781,10 @@ function normalizeExtractedEntry(raw,fileName,fallbackYear){
   if(!date)return null;
   const montant=parseAmount(raw?.montant);
   if(montant<=0)return null;
-  const secu=parseAmount(raw?.remboursement_secu);
-  const mut=parseAmount(raw?.remboursement_mutuelle);
+  const sourceType=inferSourceType(raw,fileName);
+  const secuRaw=parseAmount(raw?.remboursement_secu);
+  const mutRaw=parseAmount(raw?.remboursement_mutuelle);
+  const rb=normalizeReimbursementBySource(sourceType,montant,secuRaw,mutRaw);
   return{
     id:Date.now()+Math.floor(Math.random()*100000),
     date,
@@ -750,11 +792,12 @@ function normalizeExtractedEntry(raw,fileName,fallbackYear){
     categorie:normalizeCategory(raw?.categorie),
     acte:String(raw?.acte||'').trim()||'Acte médical',
     montant,
-    remboursement_secu:Math.min(secu,montant),
-    remboursement_mutuelle:Math.min(mut,Math.max(0,montant-secu)),
-    statut:normalizeStatut(raw?.statut,montant,secu,mut),
+    remboursement_secu:rb.secu,
+    remboursement_mutuelle:rb.mut,
+    statut:normalizeStatut(raw?.statut,montant,rb.secu,rb.mut),
     notes:[String(raw?.notes||'').trim(),fileName?`Document: ${fileName}`:''].filter(Boolean).join(' | '),
     source:'import_ia',
+    source_type:sourceType,
   };
 }
 
@@ -800,6 +843,16 @@ function mergeEntries(base,incoming,forceRecoupeNote){
   const srcTypes=[String(base.source_type||'').trim(),String(incoming.source_type||'').trim()].filter(Boolean);
   merged.source_type=[...new Set(srcTypes)].join('+');
 
+  // Keep reimbursements coherent even after merge.
+  const sourceForNorm=merged.source_type.includes('releve_complementaire')&&!merged.source_type.includes('releve_secu')
+    ?'releve_complementaire'
+    :merged.source_type.includes('releve_secu')&&!merged.source_type.includes('releve_complementaire')
+      ?'releve_secu'
+      :'facture';
+  const rb=normalizeReimbursementBySource(sourceForNorm,merged.montant,merged.remboursement_secu,merged.remboursement_mutuelle);
+  merged.remboursement_secu=rb.secu;
+  merged.remboursement_mutuelle=rb.mut;
+
   const notes=[String(base.notes||'').trim(),String(incoming.notes||'').trim()].filter(Boolean);
   if(forceRecoupeNote)notes.push('Recoupé CPAM/Complémentaire (même date + même montant engagé)');
   merged.notes=[...new Set(notes)].join(' | ');
@@ -808,6 +861,30 @@ function mergeEntries(base,incoming,forceRecoupeNote){
   merged.source=[...new Set(sources)].join('+');
 
   return merged;
+}
+
+function isLikelyComplementaryPair(a,b){
+  const as=+a.remboursement_secu||0;
+  const am=+a.remboursement_mutuelle||0;
+  const bs=+b.remboursement_secu||0;
+  const bm=+b.remboursement_mutuelle||0;
+
+  const aSe=isLikelySourceType(a,'releve_secu');
+  const aCs=isLikelySourceType(a,'releve_complementaire');
+  const bSe=isLikelySourceType(b,'releve_secu');
+  const bCs=isLikelySourceType(b,'releve_complementaire');
+
+  if((aSe&&bCs)||(aCs&&bSe))return true;
+  if(as>0&&am<=0&&bm>0&&bs<=0)return true;
+  if(bs>0&&bm<=0&&am>0&&as<=0)return true;
+  return false;
+}
+
+function isLikelySourceType(entry,type){
+  const st=String(entry?.source_type||'').toLowerCase();
+  if(type==='releve_secu')return st.includes('releve_secu');
+  if(type==='releve_complementaire')return st.includes('releve_complementaire');
+  return false;
 }
 
 function dedupeEntries(entries){
@@ -845,12 +922,24 @@ function dedupeEntries(entries){
     }
     const k2=[date,amt.toFixed(2)].join('|');
     if(!recoupeSeen.has(k2)){
-      recoupeSeen.set(k2,out2.length);
+      recoupeSeen.set(k2,[out2.length]);
       out2.push(e);
       return;
     }
-    const idx=recoupeSeen.get(k2);
-    out2[idx]=mergeEntries(out2[idx],e,true);
+    const idxList=recoupeSeen.get(k2)||[];
+    let merged=false;
+    for(const idx of idxList){
+      if(isLikelyComplementaryPair(out2[idx],e)){
+        out2[idx]=mergeEntries(out2[idx],e,true);
+        merged=true;
+        break;
+      }
+    }
+    if(merged)return;
+    // Same date+amount but not complementary: keep as separate prestation.
+    idxList.push(out2.length);
+    recoupeSeen.set(k2,idxList);
+    out2.push(e);
   });
 
   return out2;
@@ -1075,8 +1164,9 @@ function setupRealtimeSync(){
 function extractEntriesFromAi(parsed,fileName){
   const arr=Array.isArray(parsed?.entries)?parsed.entries:(Array.isArray(parsed)?parsed:[parsed]);
   const fallbackYear=String(parsed?.document_year||parsed?.annee||'');
-  const deductions=arr.map(it=>detectRetentionFromRaw(it)).filter(Boolean);
-  const entries=arr.map(it=>normalizeExtractedEntry(it,fileName,fallbackYear)).filter(Boolean);
+  const flagged=arr.map(it=>({raw:it,ret:detectRetentionFromRaw(it)}));
+  const deductions=flagged.map(x=>x.ret).filter(Boolean);
+  const entries=flagged.filter(x=>!x.ret).map(x=>normalizeExtractedEntry(x.raw,fileName,fallbackYear)).filter(Boolean);
   const deduped=dedupeEntries(entries).filter(e=>(+e.montant||0)>0);
   return applyRetentionDeductions(deduped,deductions);
 }
@@ -1340,12 +1430,16 @@ async function analyzeSingleDoc(file,ctContent){
   const prompt=`Tu es un extracteur de remboursements santé français.
 ${ctContent?`Contexte contrat:\n${ctContent}\n\n`:''}
 Lis le document et retourne UNIQUEMENT un JSON valide (sans markdown) au format:
-{"document_year":"YYYY ou null","entries":[{"date":"YYYY-MM-DD","praticien":"","categorie":"${CATS.join('|')}","acte":"","montant":0,"remboursement_secu":0,"remboursement_mutuelle":0,"statut":"En attente Sécu","notes":""}]}
+{"document_year":"YYYY ou null","entries":[{"date":"YYYY-MM-DD","source_type":"releve_secu|releve_complementaire|facture","praticien":"","categorie":"${CATS.join('|')}","acte":"","montant":0,"remboursement_secu":0,"remboursement_mutuelle":0,"statut":"En attente Sécu","notes":""}]}
 Règles:
 - Extraire toutes les lignes de soins/remboursements primordiales.
 - Années autorisées: de ${MIN_COVERAGE_YEAR} à ${new Date().getFullYear()}.
 - Si jour inconnu: mettre le premier jour du mois; si mois inconnu: 01-01.
 - montants numériques uniquement (pas de symbole).
+- IMPORTANT: ne jamais mettre le même montant dans "montant", "remboursement_secu" et "remboursement_mutuelle" sans preuve explicite.
+- Renseigner "source_type" pour chaque ligne: "releve_secu" ou "releve_complementaire" (ou "facture" si ambigu).
+- Relevé CPAM: privilégier "remboursement_secu"; "remboursement_mutuelle" = 0 si absent.
+- Relevé complémentaire/mutuelle: privilégier "remboursement_mutuelle"; "remboursement_secu" = 0 si absent.
 - Si aucune ligne exploitable: {"document_year":null,"entries":[]}.`;
   const msgContent=isImg?[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}];
   const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:2200,messages:[{role:'user',content:msgContent}]})});
