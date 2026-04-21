@@ -407,6 +407,8 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
       <button class="btn btn-gold" onclick="copySyncCode()">Copier code synchro mobile</button>
       <button class="btn btn-secondary" onclick="pasteSyncCode()">Coller code synchro mobile</button>
+      <button class="btn btn-secondary" onclick="downloadIntegratedSchema()">Télécharger schéma JSON intégré</button>
+      <button class="btn btn-secondary" onclick="copyIntegratedSchema()">Copier schéma JSON intégré</button>
       <button class="btn btn-danger" onclick="resetAllData()">Remise Ã  zÃ©ro complÃ¨te</button>
     </div>
     <div id="exp-ok" style="display:none;margin-top:10px" class="alert alert-ok"></div>
@@ -442,6 +444,87 @@ const MIN_COVERAGE_YEAR=2020;
 const ENTRIES_UPDATED_KEY=`${SK}_updated_at`;
 const SYNC_CHANNEL_NAME='santesuivi-realtime-v1';
 let syncChannel=null;
+const INTEGRATED_SCHEMA_VERSION='2026-04-21';
+const INTEGRATED_SCHEMA={
+  version:INTEGRATED_SCHEMA_VERSION,
+  contrat:{
+    responsable_et_solidaire:true,
+    date_effet_contrat:'2021-04-21',
+    delai_carence:false,
+    point_depart_limites:'1er janvier',
+  },
+  champs:{
+    base:['date_soin','date_remboursement','date_virement','beneficiaire','praticien','praticien_saisi_manuellement','destinataire_reglement','categorie','acte','acte_code','contexte_acte','statut','notes','source_document','source_type','reference_dossier','reference_ro','numero_decompte','numero_contrat','beneficiaire_rang','annee_civile'],
+    montants:['depense_reelle','montant_paye','base_remboursement','base_remboursement_ro','taux_remboursement_secu','remboursement_secu','remboursement_complementaire','remboursement_autres_organismes','remboursement_total','reste_a_charge_reel','reste_a_charge_theorique','montant_theorique_mutuelle','ecart_remboursement','taux_remboursement_effectif'],
+    contrat_garantie:['type_garantie','inclut_part_secu','type_panier','formule_soins_courants','formule_dentaire','formule_optique','formule_hospitalisation','garantie_applicable','garantie_appliquee_correctement','respect_garantie','eligibilite_remboursement'],
+    conformite:['respect_parcours_soins','hors_parcours','medecin_OPTAM','medecin_non_OPTAM','secteur_medecin','depassement_honoraires','participation_forfaitaire','franchise_medicale','ticket_moderateur','ticket_moderateur_forfaitaire','contrat_responsable_blocage'],
+    plafonds:['plafond_dentaire_annuel','plafond_prothese_premieres_annees','plafond_implant','plafond_monture','plafond_verres','plafond_lentilles','plafond_operation_defauts_visuels','plafond_aide_auditive','plafond_chambre_particuliere_jour','plafond_accompagnant_jour','plafond_prevention','plafond_medecine_douce','plafond_dietetique','plafond_naissance','plafond_cure_transport_hebergement','cumul_annuel_remboursement','cumul_par_categorie','reste_plafond_disponible','plafond_atteint','date_debut_periode_plafond','date_fin_periode_plafond'],
+    reseau:['reseau_soins','opticien_seveane','dentiste_seveane','audioprothesiste_seveane','avantage_reseau','tiers_payant_reseau'],
+    justificatifs:['devis_present','facture_presente','facture_detaillee','justificatif_secu_present','note_honoraires_presente','demande_prise_en_charge','expertise_possible','controle_medical_possible','pieces_complementaires_demandees'],
+    exclusions:['acte_hors_nomenclature','non_pris_en_charge_ro','acte_hors_garantie','plafond_reglementaire','devis_obligatoire_non_fourni','depassement_non_couvert','franchise_non_couverte','participation_forfaitaire_non_couverte','minorations_hors_parcours_non_couvertes'],
+    beneficiaires:['beneficiaire_nom','beneficiaire_date_naissance','beneficiaire_type','beneficiaire_age_au_soin','beneficiaire_eligible_forfait_enfant','beneficiaire_eligible_forfait_55_plus'],
+    controles:['remboursement_total <= depense_reelle','garantie_theorique','garantie_contractuelle_attendue','mutuelle_fonctionne_correctement','ecart_vs_contrat','cause_ecart','alerte_anomalie','anomalie_type'],
+  },
+  valeurs:{
+    source_type:['releve_secu','releve_complementaire','conditions_generales','conditions_particulieres','attestation_tiers_payant','facture','devis'],
+    categorie:['Médecin généraliste','Spécialiste','Dentiste','Pharmacie','Kiné / ostéo','Optique','Hospitalisation','Biologie','Imagerie','Psychologie','Orthoptie','Sage-femme','Prévention','Transport','Autre'],
+    contexte_acte:['PARCOURS COORDONNE - MEDECIN TRAITANT','PARCOURS COORDONNE - MEDECIN CORRESPONDANT','PARCOURS COORDONNE - HORS RESIDENCE','PARCOURS COORDONNE - ACCES DIRECT AUTORISE','HORS PARCOURS COORDONNE','Pour votre information, nous avons réglé dans le cadre du Tiers Payant'],
+    statut:['En attente Sécu','Remboursé Sécu','En attente mutuelle','Soldé','Non remboursé','Partiellement remboursé','Refusé','Plafond atteint','Hors garantie','Hors parcours'],
+    type_garantie:['100% BR','130% BR','150% BR','200% BR','220% BR','250% BR','forfait_euros','frais_reels','100% prix_limite_vente','100% honoraires_limite_facturation'],
+    type_panier:['100% sante','hors 100% sante'],
+    secteur_medecin:['secteur_1','secteur_2'],
+    beneficiaire_type:['adulte','enfant'],
+    cause_ecart:['hors_parcours','non_OPTAM','plafond_atteint','franchise','participation_forfaitaire','acte_non_couvert','hors_reseau','frequence_depassee','devis_absent','reste_a_charge_normal'],
+    anomalie_type:['sous_remboursement','sur_remboursement_theorique','libelle_non_reconnu','acte_a_controler','beneficiaire_inconnu'],
+    reseau_soins:['Seveane','hors reseau'],
+    actes_secu:['ACTE TECH MEDICAL','ACTE TECH MEDICAL Sect1','ACTE TECH MEDICAL Sect2','ACTE PROPHYLAXIE','SOINS DENTAIRES','CONSULTATION CD','OPHTALMOLOGUE','MAJO COORDINATION','C. SPECIFIQUE','ACTE D IMAGERIE','HONOR. DISPENS.','HONOR.DISPENS.REM','PHARMACIE','FORF NON REMBOURS','TELECONSULTATION','PROTHESE DENTAIRE','INLAY-CORE','SEANCE','TELESEANCE','ENTRETIEN D EVAL.','C GENERALISTE','CHIRURGIE','SAGE FEMME','MAJO SAGE-FEMME','SEANCES ORTHOPT.','MONTURE OPTIQUE B','VERRE OPTIQUE B','ACTE BIOLOGIE','PRELEVEMENT'],
+    codes_actes_secu:['ATM','AXI','SDE','CD','CS','MCS','MCG','APC','ADI','HD4','HD7','HDR','PH4','PH7','PAP','TCG','PFC','ICO','APS','PSS','EEP','G','C','MSF','AMY 8.0','M03','VM2','B 217.0','B 275.0','B 86.0','TB 1.5'],
+    actes_mutuelle:['Inlay core ceramique','Prothese fixe','Seance psychologue','Bilan psychologue','Consult medecine','Consultation enfant','Honoraire medicament','Tech med hors','Prophylaxie-prevention','Majo coord specialiste','Consult specialiste','Avis ponctuel medecin','Dispensation medicament','Consultation dentaire','Imagerie dentaire','Ticket moderateur','Majo coord generaliste','Consultation','Seances orthoptie','Analyses','Prelevement','Soins infirmiers','Verre complexe classe','Monture adulte classe','Endodontie','Teleconsultation','Pharmacie','imagerie','b'],
+    praticiens_destinataires:['CDS DENTAIRE ALBI CASTELVIEL','PAYET JULIEN','ALAZARD PHILIPPE','QARE SANTE','MIG OPTIQUE','SELARL PHARMACIE LACOMBE','LBM LXBIO','GALTIER PHILIPPE','Praticien non précisé','Saisie manuelle requise'],
+    retenues_exclusions:['participation forfaitaire','participation forfaitaire à retenir','PFH','PFT','2 PFT','4 PFT','franchise','franchise à retenir','FRT','FRH','TM MAJORE','RECUPERATION SUR CREANCE OQN','FORF NON REMBOURS','PAP'],
+    tiers_payant_domaines:['PHAR','MED','SVIL','CSTE','TRAN','HOSP','CHAM','EXTE','OPTI','AUDI','DESO','DEPR','DEOR'],
+    tiers_payant_flux:['SP','SE','GG','OC','ROC','PEC'],
+    tiers_payant_niveaux:['PHAR = 100%','MED = 100%','SVIL = 100%','CSTE = 100%','TRAN = 100%','HOSP = 100%','CHAM = 35 Eur','EXTE = 100%','OPTI = PEC','AUDI = PEC','DEPR = 100%','DESO = 100%','DEOR = 100%'],
+    beneficiaires_identifies:['MASSOL PATRICIA','MASSOL JADE LOU'],
+  },
+  garanties:{
+    soins_courants:['Honoraires médicaux OPTAM = 150% BR','Honoraires médicaux non OPTAM = 130% BR','Auxiliaires médicaux = 130% BR','Médicaments 65/30/15 = 100% BR','Analyses et examens de laboratoires = 130% BR','Appareillage hors optique/dentaire/aide auditive = 130% BR','Transports médicaux = 130% BR','Frais thermaux = 130% BR','Hébergement + transport cure = 100% BR + 80€','Médecine douce = 2 séances à 50€ / an / bénéficiaire','Consultation diététique = 35€ / an / bénéficiaire','Actes prévention OPTAM = 150% BR','Actes prévention non OPTAM = 130% BR','Vaccin anti-grippe non RO = frais réels','Forfait prévention annuel = 40€'],
+    dentaire:['Actes de prévention dentaire = 100% BR','Bilan annuel prévention dentaire = 25€ / an / bénéficiaire','Vernis fluoré enfant <13 ans = 65€ / an','Détartrage approfondi 55+ = 65€ / an','Traitement des gencives Sévéane = 200€ / an / bénéficiaire','Traitement des gencives hors réseau = non prévu','Consultations / soins conservateurs / radios / extractions = 100% BR','Inlay / Onlay Sévéane = 100% BR + 70€','Inlay / Onlay hors réseau = 100% BR','Orthodontie RO = 250% BR, soit 483€ / semestre','Soins et prothèses 100% santé = 100% HLF','Couronnes et inters bridge céramique Sévéane = 300€','Couronnes et inters bridge céramique hors réseau = 250€','Au-delà de 4 forfaits couronnes/bridges = 200% BR','Autres actes prothétiques = 200% BR','Appareils dentaires amovibles = 100% BR + 330€','Plafond prothèses 2 premières années Sévéane = 700€ / an / bénéficiaire','Plafond prothèses 2 premières années hors réseau = 600€ / an / bénéficiaire','Si plafond atteint = remboursement limité à 100% BR','Implant Sévéane = 350€ / implant','Implant hors réseau = 300€ / implant','Limite implant = 2 implants / période de 2 ans','Garantie casse/réparation prothèses Sévéane = 10 ans','Suppression plafonds prothèses à partir de la 3e année du contrat'],
+    optique:['Équipements 100% Santé = 100% Prix Limite de Vente','Monture enfant = 50€','Monture adulte = 95€','Deux verres simples Sévéane = prise en charge intégrale','Deux verres simples hors réseau = 50€','Autres verres enfant Sévéane = prise en charge intégrale','Autres verres enfant hors réseau = 150€','Autres verres adulte Sévéane = prise en charge intégrale','Autres verres adulte hors réseau = 135€','Lentilles Sévéane = 95€ / an / bénéficiaire','Lentilles hors réseau = 80€ / an / bénéficiaire','Opération défauts visuels = 230€','Limite opération défauts visuels = 2 forfaits / bénéficiaire / durée du contrat','Fréquence renouvellement optique = 1 équipement / 2 ans','Fréquence enfant <16 ans = 1 fois / an','Fréquence en cas d’évolution de vue = dérogation possible'],
+    aides_auditives:['100% Santé auditif = 100% Prix Limite de Vente','Aide auditive adulte = 500€ / oreille, part RO incluse','Aide auditive enfant = 130% BR','Plafond enfant = 1700€ / oreille, part RO incluse','Piles et accessoires = 130% BR','Avantage Sévéane audioprothésistes = service inclus'],
+    hospitalisation:['Honoraires soins OPTAM = 220% BR','Honoraires soins non OPTAM = 200% BR','Frais de séjour = 200% BR','Forfait journalier hospitalier = frais réels','Chambre particulière = 35€ / jour','Lit et repas accompagnant = 20€ / jour','Hospitalisation psychiatrique / neuropsy = 30 jours / an / bénéficiaire pour certaines prises en charge','Forfait journalier / honoraires / frais séjour psychiatriques = illimités','Maison de repos / convalescence = uniquement suite hospitalisation + prescription','MAS exclues','EHPAD exclus pour tiers payant','Pour psychiatrie, demande de prise en charge obligatoire'],
+    prevention_services:['Médecine douce : ostéopathie','Médecine douce : étiopathie','Médecine douce : chiropractie','Médecine douce : hypnothérapie','Médecine douce : acupuncture','Médecine douce : homéopathie','Médecine douce : psychothérapie','Médecine douce : psychomotricité','Forfait prévention annuel = 40€','Vaccins prescrits non RO','Anti-paludéens','Sevrage tabagique','Moyens contraceptifs','Actes pédicure/podologue 55+','Consultation diététique','Téléconsultation = 6 consultations / an / bénéficiaire','Forfait naissance bienvenue = 100€','Aide ménagère / garde à domicile = 25h','Rapprochement familial / livraison / animaux = 300€'],
+  },
+  normalisations:[
+    ['Teleconsultation','TELECONSULTATION'],
+    ['Consultation','Consult medecine'],
+    ['Seances orthoptie','SEANCES ORTHOPT.'],
+    ['Analyses','ACTE BIOLOGIE'],
+    ['Prelevement','PRELEVEMENT'],
+    ['Inlay core ceramique','dentaire prothétique / reconstruction'],
+    ['Prothese fixe','prothèse dentaire fixe'],
+    ['Majo coord generaliste','majoration coordination généraliste'],
+    ['Majo coord specialiste','majoration coordination spécialiste'],
+    ['Tech med hors','acte technique médical hors parcours / hors libellé complet'],
+    ['Pharmacie + Honoraire medicament + Dispensation medicament','flux pharmacie'],
+    ['b','biologie / libellé bruité'],
+  ],
+  regles_metier:[
+    'aucun delai_de_carence',
+    'date_effet_contrat = 2021-04-21',
+    'point_depart_limites = 1er janvier',
+    'plafonds par an et par bénéficiaire',
+    'optique : équipement tous les 2 ans',
+    'optique enfant <16 ans : 1 fois / an',
+    'implants : plafond sur 2 ans',
+    'prothèses dentaires : plafond spécial sur les 2 premières années',
+    'suppression plafond prothèses à partir de la 3e année',
+    'les garanties en % BR incluent la part RO',
+    'les remboursements sont limités aux frais réels',
+    "l'attestation tiers payant n'indique pas le niveau de garantie",
+  ],
+  champs_minimaux_jugement_mutuelle:['beneficiaire','date_soin','acte','categorie','praticien','reseau_soins','respect_parcours_soins','medecin_OPTAM','depense_reelle','base_remboursement','remboursement_secu','remboursement_complementaire','type_garantie','taux_contrat','plafond_applicable','cumul_avant_soin','reste_plafond_disponible','type_panier','frequence_renouvellement_respectee','garantie_theorique','ecart_vs_contrat','cause_ecart'],
+};
 
 function ld(){
   try{
@@ -698,6 +781,40 @@ function normalizeLoadedEntries(entries){
     });
     return out;
   });
+}
+
+function createSchemaEntryDefaults(){
+  const out={};
+  Object.values(INTEGRATED_SCHEMA.champs).forEach(arr=>arr.forEach(k=>{if(!(k in out))out[k]=null;}));
+  return out;
+}
+
+function applyIntegratedSchemaToEntry(entry){
+  const base=createSchemaEntryDefaults();
+  const e={...base,...entry};
+  e.date_soin=e.date_soin||e.date||today();
+  e.annee_civile=e.annee_civile||String((e.date_soin||'').slice(0,4)||'');
+  e.beneficiaire=e.beneficiaire||e.beneficiaire_nom||'Assuré';
+  e.depense_reelle=+((e.depense_reelle??e.montant??e.montant_paye) || 0);
+  e.montant_paye=+((e.montant_paye??e.montant??e.depense_reelle) || 0);
+  e.remboursement_secu=+((e.remboursement_secu??0) || 0);
+  e.remboursement_complementaire=+((e.remboursement_complementaire??e.remboursement_mutuelle??0) || 0);
+  e.remboursement_autres_organismes=+((e.remboursement_autres_organismes??0) || 0);
+  e.remboursement_total=e.remboursement_secu+e.remboursement_complementaire+e.remboursement_autres_organismes;
+  e.reste_a_charge_reel=Math.max(0,e.depense_reelle-e.remboursement_total);
+  e.taux_remboursement_effectif=e.depense_reelle>0?(e.remboursement_total/e.depense_reelle*100):0;
+  e.mutuelle_fonctionne_correctement=e.ecart_vs_contrat==null?null:Math.abs(+e.ecart_vs_contrat||0)<0.01;
+  if(!e.categorie)e.categorie='Autre';
+  if(!e.statut)e.statut='En attente Sécu';
+  return e;
+}
+
+function validateEntryMinimalFields(entry){
+  const missing=[];
+  INTEGRATED_SCHEMA.champs_minimaux_jugement_mutuelle.forEach(k=>{
+    if(entry[k]===null||entry[k]===undefined||entry[k]==='')missing.push(k);
+  });
+  return missing;
 }
 
 function normalizeGenericDeep(v){
@@ -1024,7 +1141,7 @@ async function handleFiles(fileList){
       const rows=await analyzeSingleDoc(file,ctContent);
       extracted=extracted.concat(rows);
     }
-    pendingEntries=dedupeEntries(extracted).filter(e=>isCoverageYear(e.date.slice(0,4)));
+    pendingEntries=dedupeEntries(extracted.map(applyIntegratedSchemaToEntry)).filter(e=>isCoverageYear(String(e.date||e.date_soin||'').slice(0,4)));
     if(!pendingEntries.length)throw new Error(`Aucune donnÃ©e exploitable dÃ©tectÃ©e (${MIN_COVERAGE_YEAR} â†’ ${new Date().getFullYear()}).`);
     const years=[...new Set(pendingEntries.map(e=>e.date.slice(0,4)))].sort();
     const preview=pendingEntries.slice(0,8).map(e=>`<div class="ai-field"><span class="ai-field-label">${e.date} â€¢ ${e.praticien}</span><span style="font-weight:500">${fmt(e.montant)}</span></div>`).join('');
@@ -1051,7 +1168,7 @@ async function handleFiles(fileList){
 function confirmEntry(){
   if(!pendingEntries.length)return;
   const data=ld();
-  const merged=dedupeEntries(data.concat(pendingEntries));
+  const merged=dedupeEntries(data.concat(pendingEntries.map(applyIntegratedSchemaToEntry)));
   sd(merged);
   pendingEntries=[];
   document.getElementById('aiResult').classList.remove('on');
@@ -1091,7 +1208,7 @@ function updateRACPreview(){
 function saveSaisie(){
   const mnt=parseFloat(document.getElementById('sm-mnt').value)||0;
   if(!mnt){document.getElementById('sm-mnt').focus();return;}
-  const entry={id:Date.now(),date:document.getElementById('sm-date').value,categorie:document.getElementById('sm-cat').value,praticien:document.getElementById('sm-prat').value.trim().replace(/ \(.*\)$/,''),acte:document.getElementById('sm-acte').value.trim(),montant:mnt,remboursement_secu:parseFloat(document.getElementById('sm-secu').value)||0,remboursement_mutuelle:parseFloat(document.getElementById('sm-mut').value)||0,statut:document.getElementById('sm-stat').value,notes:document.getElementById('sm-notes').value.trim(),source:'manuelle'};
+  const entry=applyIntegratedSchemaToEntry({id:Date.now(),date:document.getElementById('sm-date').value,categorie:document.getElementById('sm-cat').value,praticien:document.getElementById('sm-prat').value.trim().replace(/ \(.*\)$/,''),acte:document.getElementById('sm-acte').value.trim(),montant:mnt,remboursement_secu:parseFloat(document.getElementById('sm-secu').value)||0,remboursement_mutuelle:parseFloat(document.getElementById('sm-mut').value)||0,statut:document.getElementById('sm-stat').value,notes:document.getElementById('sm-notes').value.trim(),source:'manuelle',source_type:'facture'});
   const data=dedupeEntries(ld().concat(entry));sd(data);
   const ok=document.getElementById('sm-ok');ok.style.display='flex';setTimeout(()=>ok.style.display='none',2500);
   resetSaisie();renderDashboard();updateExpYears();
@@ -1478,6 +1595,39 @@ function exportFullBackup(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));a.download=`santesuivi_backup_${today()}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
+function getIntegratedSchemaSnapshot(){
+  return normalizeGenericDeep({
+    ...INTEGRATED_SCHEMA,
+    exported_at:new Date().toISOString(),
+    generated_from:'SantéSuivi',
+  });
+}
+
+function downloadIntegratedSchema(){
+  const data=getIntegratedSchemaSnapshot();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download=`santesuivi_schema_${INTEGRATED_SCHEMA_VERSION}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showExpOk('Schéma JSON intégré exporté.',false);
+}
+
+async function copyIntegratedSchema(){
+  try{
+    const txt=JSON.stringify(getIntegratedSchemaSnapshot(),null,2);
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(txt);
+    }else{
+      const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    }
+    showExpOk('Schéma JSON intégré copié.',false);
+  }catch(err){
+    showExpOk(`Copie du schéma impossible : ${err.message}`,true);
+  }
+}
+
 function showExpOk(msg,isError){
   const ok=document.getElementById('exp-ok');
   if(!ok)return;
@@ -1572,7 +1722,11 @@ function resetAllData(){
 function renderExpSummary(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('exp-annual-table');
   if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
-  el.innerHTML=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('')||'<div class="empty-state">Aucune donn�e</div>';
+  const annual=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('');
+  let missingTotal=0;
+  entries.forEach(e=>{missingTotal+=validateEntryMinimalFields(applyIntegratedSchemaToEntry(e)).length;});
+  const diag=`<div style="margin-top:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--text2)">Schéma intégré: ${INTEGRATED_SCHEMA.champs_minimaux_jugement_mutuelle.length} champs minimaux de contrôle. Données manquantes détectées (somme sur les lignes): <b>${missingTotal}</b>.</div>`;
+  el.innerHTML=(annual||'<div class="empty-state">Aucune donnée</div>')+diag;
 }
 
 // Fix typo in rTrimestriel (y axis key)
