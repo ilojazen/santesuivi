@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SantéSuivi — Tableau de bord médical</title>
+<title>SantÃ©Suivi â€” Tableau de bord mÃ©dical</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -114,7 +114,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 .search-box{position:relative;margin-bottom:1rem}
 .search-box input{width:100%;padding:10px 12px 10px 38px;border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--surface);color:var(--text);outline:none}
 .search-box input:focus{border-color:var(--accent)}
-.search-box::before{content:"⌕";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.search-box::before{content:"âŒ•";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
 
 /* SECTION TABS */
 .subtabs{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap}
@@ -185,12 +185,19 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
   #main{padding:1rem .75rem}
   .tp-card{padding:1.25rem}
 }
+
+#main.realtime-pulse{animation:realtimePulse .28s ease-out}
+@keyframes realtimePulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.008)}
+  100%{transform:scale(1)}
+}
 </style>
 </head>
 <body>
 
 <nav id="topnav">
-  <div class="tn-logo">Santé<span>Suivi</span></div>
+  <div class="tn-logo">SantÃ©<span>Suivi</span></div>
   <button class="navbtn active" onclick="nav('dashboard',this)">Tableau de bord</button>
   <button class="navbtn" onclick="nav('saisie',this)">Saisie</button>
   <button class="navbtn" onclick="nav('analyses',this)">Analyses</button>
@@ -207,42 +214,40 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
   <div class="section-header">
     <div>
       <div class="section-title">Tableau de bord</div>
-      <div class="section-sub" id="db-period-label">2025 · toutes catégories</div>
+      <div class="section-sub" id="db-period-label">2025 Â· toutes catÃ©gories</div>
     </div>
-    <div class="period-sel">
-      <button class="pbtn active" onclick="setPeriod('2025',this)">2025</button>
-      <button class="pbtn" onclick="setPeriod('2024',this)">2024</button>
-      <button class="pbtn" onclick="setPeriod('all',this)">Tout</button>
+    <div class="period-sel" id="db-period-buttons">
+      <button class="pbtn active" onclick="setPeriod('all',this)">Tout</button>
     </div>
   </div>
   <div id="db-alerts"></div>
   <div class="metrics-grid" id="db-metrics"></div>
   <div class="card">
-    <div class="card-title">Import de document — extraction automatique par IA</div>
+    <div class="card-title">Import de document â€” extraction automatique par IA</div>
     <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
-      <input type="file" id="fileInput" accept="image/*,.pdf" multiple onchange="handleFile(this.files[0])">
-      <div style="font-size:28px;margin-bottom:8px;opacity:.4">⬆</div>
-      <div style="font-weight:500;margin-bottom:4px">Déposer ou cliquer pour importer</div>
-      <div style="font-size:12px;color:var(--text3)">Feuille de soins · Remboursement mutuelle · Facture praticien</div>
+      <input type="file" id="fileInput" accept="image/*,.pdf" multiple onchange="handleFiles(this.files)">
+      <div style="font-size:28px;margin-bottom:8px;opacity:.4">â¬†</div>
+      <div style="font-weight:500;margin-bottom:4px">DÃ©poser ou cliquer pour importer</div>
+      <div style="font-size:12px;color:var(--text3)">Feuille de soins Â· Remboursement mutuelle Â· Facture praticien</div>
     </div>
-    <div class="ai-proc" id="aiProc"><div class="spinner"></div><span>ChatGPT analyse le document…</span></div>
+    <div class="ai-proc" id="aiProc"><div class="spinner"></div><span>ChatGPT analyse le documentâ€¦</span></div>
     <div class="ai-result" id="aiResult">
-      <div style="font-weight:500;font-size:12px;color:var(--accent);margin-bottom:4px">Données extraites — vérifiez avant de confirmer</div>
+      <div style="font-weight:500;font-size:12px;color:var(--accent);margin-bottom:4px">DonnÃ©es extraites â€” vÃ©rifiez avant de confirmer</div>
       <div id="aiFields"></div>
       <button class="btn btn-primary btn-sm" onclick="confirmEntry()" style="align-self:flex-end;margin-top:6px">Confirmer et ajouter</button>
     </div>
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <div class="card-title" style="margin-bottom:0">Dernières entrées</div>
+      <div class="card-title" style="margin-bottom:0">DerniÃ¨res entrÃ©es</div>
       <div class="subtabs">
         <button class="stab active" onclick="switchDbTab('list',this)">Liste</button>
         <button class="stab" onclick="switchDbTab('chart',this)">Graphique</button>
-        <button class="stab" onclick="switchDbTab('cats',this)">Catégories</button>
+        <button class="stab" onclick="switchDbTab('cats',this)">CatÃ©gories</button>
       </div>
     </div>
     <div id="db-tab-list"></div>
-    <div id="db-tab-chart" style="display:none"><div class="chart-wrap" style="height:240px"><canvas id="c-db-main" role="img" aria-label="Dépenses mensuelles">.</canvas></div></div>
+    <div id="db-tab-chart" style="display:none"><div class="chart-wrap" style="height:240px"><canvas id="c-db-main" role="img" aria-label="DÃ©penses mensuelles">.</canvas></div></div>
     <div id="db-tab-cats" style="display:none" id="db-tab-cats"></div>
   </div>
 </div>
@@ -251,24 +256,24 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 <div id="p-saisie" class="page">
   <div class="section-header"><div class="section-title">Saisie rapide</div></div>
   <div class="card">
-    <div class="card-title">Nouvelle entrée manuelle</div>
+    <div class="card-title">Nouvelle entrÃ©e manuelle</div>
     <div class="fg2">
       <div class="field"><label>Date</label><input type="date" id="sm-date"></div>
-      <div class="field"><label>Catégorie</label><select id="sm-cat"></select></div>
-      <div class="field"><label>Praticien</label><input id="sm-prat" list="sm-prat-list" placeholder="Nom…"><datalist id="sm-prat-list"></datalist></div>
-      <div class="field"><label>Acte / description</label><input id="sm-acte" placeholder="Consultation, médicaments…"></div>
-      <div class="field"><label>Montant payé (€)</label><input type="number" id="sm-mnt" placeholder="0.00" min="0" step="0.01" oninput="updateRACPreview()"></div>
-      <div class="field"><label>Remb. Sécu (€)</label><input type="number" id="sm-secu" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
-      <div class="field"><label>Remb. mutuelle (€)</label><input type="number" id="sm-mut" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
+      <div class="field"><label>CatÃ©gorie</label><select id="sm-cat"></select></div>
+      <div class="field"><label>Praticien</label><input id="sm-prat" list="sm-prat-list" placeholder="Nomâ€¦"><datalist id="sm-prat-list"></datalist></div>
+      <div class="field"><label>Acte / description</label><input id="sm-acte" placeholder="Consultation, mÃ©dicamentsâ€¦"></div>
+      <div class="field"><label>Montant payÃ© (â‚¬)</label><input type="number" id="sm-mnt" placeholder="0.00" min="0" step="0.01" oninput="updateRACPreview()"></div>
+      <div class="field"><label>Remb. SÃ©cu (â‚¬)</label><input type="number" id="sm-secu" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
+      <div class="field"><label>Remb. mutuelle (â‚¬)</label><input type="number" id="sm-mut" placeholder="0.00" min="0" step="0.01" value="0" oninput="updateRACPreview()"></div>
       <div class="field"><label>Statut</label><select id="sm-stat"></select></div>
     </div>
-    <div class="field"><label>Notes</label><textarea id="sm-notes" placeholder="Numéro de feuille, observations…"></textarea></div>
+    <div class="field"><label>Notes</label><textarea id="sm-notes" placeholder="NumÃ©ro de feuille, observationsâ€¦"></textarea></div>
     <div id="sm-rac" style="font-size:12px;color:var(--text3);margin-bottom:12px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="saveSaisie()">Enregistrer</button>
       <button class="btn btn-secondary" onclick="resetSaisie()">Effacer</button>
     </div>
-    <div id="sm-ok" style="display:none;margin-top:10px" class="alert alert-ok">Entrée ajoutée avec succès !</div>
+    <div id="sm-ok" style="display:none;margin-top:10px" class="alert alert-ok">EntrÃ©e ajoutÃ©e avec succÃ¨s !</div>
   </div>
 </div>
 
@@ -276,7 +281,7 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 <div id="p-analyses" class="page">
   <div class="section-header">
     <div class="section-title">Analyses</div>
-    <div class="period-sel">
+    <div class="period-sel" id="an-period-buttons">
       <button class="pbtn active" id="an-yr-all" onclick="setAnPeriod('all',this)">Tout</button>
     </div>
   </div>
@@ -317,16 +322,16 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div class="card-title">Mes informations</div>
     <div class="fg2">
       <div class="field"><label>Nom complet</label><input id="tp-nom" placeholder="DUPONT Jean" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>N° adhérent</label><input id="tp-adherent" placeholder="000 000 000 000" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>N° de sécurité sociale</label><input id="tp-nss" placeholder="1 80 01 75 123 456 78" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>Organisme / Mutuelle</label><input id="tp-organisme" placeholder="MGEN, Harmonie, AXA…" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>Code contrat</label><input id="tp-contrat" placeholder="Numéro de contrat" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>Date de validité</label><input type="date" id="tp-validite" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>Téléphone mutuelle</label><input id="tp-tel" placeholder="0800 xxx xxx" oninput="saveTp();renderTP()"></div>
-      <div class="field"><label>AMO (Sécu)</label><input id="tp-amo" placeholder="Caisse d'affiliation" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>NÂ° adhÃ©rent</label><input id="tp-adherent" placeholder="000 000 000 000" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>NÂ° de sÃ©curitÃ© sociale</label><input id="tp-nss" placeholder="1 80 01 75 123 456 78" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>Organisme / Mutuelle</label><input id="tp-organisme" placeholder="MGEN, Harmonie, AXAâ€¦" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>Code contrat</label><input id="tp-contrat" placeholder="NumÃ©ro de contrat" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>Date de validitÃ©</label><input type="date" id="tp-validite" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>TÃ©lÃ©phone mutuelle</label><input id="tp-tel" placeholder="0800 xxx xxx" oninput="saveTp();renderTP()"></div>
+      <div class="field"><label>AMO (SÃ©cu)</label><input id="tp-amo" placeholder="Caisse d'affiliation" oninput="saveTp();renderTP()"></div>
     </div>
-    <div class="field"><label>Garanties (une par ligne)</label><textarea id="tp-garanties" placeholder="Hospitalisation 100%&#10;Optique 200€/an&#10;Dentaire 150%" oninput="saveTp();renderTP()"></textarea></div>
-    <div class="field"><label>QR Code / informations complémentaires</label><input id="tp-qr" placeholder="Code, URL ou référence" oninput="saveTp();renderTP()"></div>
+    <div class="field"><label>Garanties (une par ligne)</label><textarea id="tp-garanties" placeholder="Hospitalisation 100%&#10;Optique 200â‚¬/an&#10;Dentaire 150%" oninput="saveTp();renderTP()"></textarea></div>
+    <div class="field"><label>QR Code / informations complÃ©mentaires</label><input id="tp-qr" placeholder="Code, URL ou rÃ©fÃ©rence" oninput="saveTp();renderTP()"></div>
   </div>
   <div class="card">
     <div class="card-title">Partager la carte</div>
@@ -341,24 +346,24 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 
 <!-- ============================================================ CONTRAT -->
 <div id="p-contrat" class="page">
-  <div class="section-header"><div class="section-title">Contrat santé & CGV</div></div>
-  <div class="alert alert-info">Versez vos CGV et conditions particulières ici. L'outil en tiendra compte pour calibrer les plafonds, les taux de remboursement attendus et les alertes.</div>
+  <div class="section-header"><div class="section-title">Contrat santÃ© & CGV</div></div>
+  <div class="alert alert-info">Versez vos CGV et conditions particuliÃ¨res ici. L'outil en tiendra compte pour calibrer les plafonds, les taux de remboursement attendus et les alertes.</div>
   <div id="contract-list"></div>
   <div class="card">
     <div class="card-title">Ajouter un document contractuel</div>
     <div class="fg2">
       <div class="field"><label>Type</label>
         <select id="ct-type">
-          <option>Conditions générales (CGV)</option>
-          <option>Conditions particulières</option>
+          <option>Conditions gÃ©nÃ©rales (CGV)</option>
+          <option>Conditions particuliÃ¨res</option>
           <option>Tableau de garanties</option>
           <option>Notice d'information</option>
           <option>Autre</option>
         </select>
       </div>
-      <div class="field"><label>Nom / référence</label><input id="ct-nom" placeholder="Ex: Contrat Harmonie 2025"></div>
+      <div class="field"><label>Nom / rÃ©fÃ©rence</label><input id="ct-nom" placeholder="Ex: Contrat Harmonie 2025"></div>
     </div>
-    <div class="field"><label>Contenu (coller le texte ou résumé)</label><textarea id="ct-content" style="min-height:120px" placeholder="Collez ici le texte de vos conditions, tableau de garanties, etc."></textarea></div>
+    <div class="field"><label>Contenu (coller le texte ou rÃ©sumÃ©)</label><textarea id="ct-content" style="min-height:120px" placeholder="Collez ici le texte de vos conditions, tableau de garanties, etc."></textarea></div>
     <div class="field"><label>Ou importer un fichier texte/PDF</label>
       <input type="file" id="ct-file" accept=".txt,.pdf,.csv" onchange="importContractFile(this)" style="border:none;padding:0;font-size:12px">
     </div>
@@ -369,16 +374,16 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
     <div id="contract-analysis-result"></div>
   </div>
   <div class="card">
-    <div class="card-title">Plafonds configurés</div>
+    <div class="card-title">Plafonds configurÃ©s</div>
     <div id="plafonds-list"></div>
     <div class="card-subtitle" style="margin-top:1rem">Ajouter un plafond manuel</div>
     <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-      <div class="field" style="margin:0;flex:1;min-width:130px"><label>Catégorie</label><select id="pl-cat"></select></div>
-      <div class="field" style="margin:0;width:110px"><label>Plafond (€)</label><input type="number" id="pl-mnt" placeholder="500" min="0" step="10"></div>
+      <div class="field" style="margin:0;flex:1;min-width:130px"><label>CatÃ©gorie</label><select id="pl-cat"></select></div>
+      <div class="field" style="margin:0;width:110px"><label>Plafond (â‚¬)</label><input type="number" id="pl-mnt" placeholder="500" min="0" step="10"></div>
       <button class="btn btn-primary" onclick="addPlafond()">Ajouter</button>
     </div>
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
-      <div class="field"><label>Seuil d'alerte RAC mensuel (€)</label><input type="number" id="seuil-rac" placeholder="200" min="0" step="10"></div>
+      <div class="field"><label>Seuil d'alerte RAC mensuel (â‚¬)</label><input type="number" id="seuil-rac" placeholder="200" min="0" step="10"></div>
       <button class="btn btn-secondary btn-sm" onclick="saveSeuil()">Enregistrer le seuil</button>
     </div>
   </div>
@@ -388,21 +393,21 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 <div id="p-export" class="page">
   <div class="section-header"><div class="section-title">Export & sauvegarde</div></div>
   <div class="card">
-    <div class="card-title">Export CSV — entrées</div>
+    <div class="card-title">Export CSV â€” entrÃ©es</div>
     <div class="fg3">
-      <div class="field"><label>Période</label><select id="exp-yr"><option value="all">Toutes années</option></select></div>
-      <div class="field"><label>Catégorie</label><select id="exp-cat"><option value="">Toutes</option></select></div>
+      <div class="field"><label>PÃ©riode</label><select id="exp-yr"><option value="all">Toutes annÃ©es</option></select></div>
+      <div class="field"><label>CatÃ©gorie</label><select id="exp-cat"><option value="">Toutes</option></select></div>
       <div class="field"><label>Statut</label><select id="exp-stat"><option value="">Tous</option></select></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="exportCSV()">Télécharger CSV entrées</button>
+      <button class="btn btn-primary" onclick="exportCSV()">TÃ©lÃ©charger CSV entrÃ©es</button>
       <button class="btn btn-secondary" onclick="exportPraticiens()">CSV praticiens</button>
-      <button class="btn btn-secondary" onclick="exportFullBackup()">Sauvegarde complète JSON</button>
+      <button class="btn btn-secondary" onclick="exportFullBackup()">Sauvegarde complÃ¨te JSON</button>
     </div>
     <div id="exp-ok" style="display:none;margin-top:10px" class="alert alert-ok"></div>
   </div>
   <div class="card" id="exp-summary">
-    <div class="card-title">Récapitulatif annuel</div>
+    <div class="card-title">RÃ©capitulatif annuel</div>
     <div id="exp-annual-table"></div>
   </div>
 </div>
@@ -419,18 +424,27 @@ const CFG='config_santesuivi_v1';
 const TPK='tiers_payant_v1';
 const CTK='contracts_v1';
 
-const CATS=['Médecin généraliste','Spécialiste','Dentiste','Pharmacie','Kiné / ostéo','Optique','Hospitalisation','Autre'];
-const STATUTS=['En attente Sécu','Remboursé Sécu','En attente mutuelle','Soldé'];
-const MONTHS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const CATS=['MÃ©decin gÃ©nÃ©raliste','SpÃ©cialiste','Dentiste','Pharmacie','KinÃ© / ostÃ©o','Optique','Hospitalisation','Autre'];
+const STATUTS=['En attente SÃ©cu','RemboursÃ© SÃ©cu','En attente mutuelle','SoldÃ©'];
+const MONTHS=['Jan','FÃ©v','Mar','Avr','Mai','Jun','Jul','AoÃ»','Sep','Oct','Nov','DÃ©c'];
 const QQ=['T1','T2','T3','T4'];
-const CAT_COLORS={'Médecin généraliste':'#378ADD','Spécialiste':'#7F77DD','Dentiste':'#D85A30','Pharmacie':'#1D9E75','Kiné / ostéo':'#BA7517','Optique':'#D4537E','Hospitalisation':'#E24B4A','Autre':'#888780'};
+const CAT_COLORS={'MÃ©decin gÃ©nÃ©raliste':'#378ADD','SpÃ©cialiste':'#7F77DD','Dentiste':'#D85A30','Pharmacie':'#1D9E75','KinÃ© / ostÃ©o':'#BA7517','Optique':'#D4537E','Hospitalisation':'#E24B4A','Autre':'#888780'};
 const YR_COLORS=['#1A4D3A','#C8A96E','#D85A30','#7F77DD','#378ADD'];
 const AV_COLORS=[['#E8F3EE','#1A4D3A'],['#EDE9FF','#5B21B6'],['#FBF5EA','#8B5B10'],['#EAF1FC','#1A4D8A'],['#FDEEEC','#9B2C2C']];
 const STAT_CLS=['s0','s1','s2','s3'];
 const AI_MODEL='gpt-4.1-mini';
+const MIN_COVERAGE_YEAR=2020;
+const ENTRIES_UPDATED_KEY=`${SK}_updated_at`;
+const SYNC_CHANNEL_NAME='santesuivi-realtime-v1';
+let syncChannel=null;
 
 function ld(){try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];}}
-function sd(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch{}}
+function sd(d){
+  try{
+    localStorage.setItem(SK,JSON.stringify(d));
+    notifyEntriesUpdated();
+  }catch{}
+}
 function lp(){try{return JSON.parse(localStorage.getItem(PK))||[];}catch{return[];}}
 function sp(d){try{localStorage.setItem(PK,JSON.stringify(d));}catch{}}
 function lcfg(){try{return JSON.parse(localStorage.getItem(CFG))||{plafonds:[],seuil_rac_mensuel:200};}catch{return{plafonds:[],seuil_rac_mensuel:200};}}
@@ -440,27 +454,239 @@ function stp(d){try{localStorage.setItem(TPK,JSON.stringify(d));}catch{}}
 function lct(){try{return JSON.parse(localStorage.getItem(CTK))||[];}catch{return[];}}
 function sct(d){try{localStorage.setItem(CTK,JSON.stringify(d));}catch{}}
 
-function fmt(n){return(+n||0).toFixed(2).replace('.',',')+'\u202f€';}
-function fmts(n){return(+n||0).toFixed(0)+'\u202f€';}
+function fmt(n){return(+n||0).toFixed(2).replace('.',',')+'\u202fâ‚¬';}
+function fmts(n){return(+n||0).toFixed(0)+'\u202fâ‚¬';}
 function initials(n){return(n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');}
 function avCol(i){return AV_COLORS[i%AV_COLORS.length];}
 function today(){return new Date().toISOString().slice(0,10);}
 function yrNow(){return new Date().getFullYear().toString();}
 function mNow(){return new Date().getMonth()+1;}
 function delta(a,b){if(!b)return null;return(a-b)/b*100;}
-function deltaHtml(d){if(d===null)return '<span class="delta-neu">—</span>';const s=d>0?'+':'';const c=d>2?'delta-neg':d<-2?'delta-pos':'delta-neu';return`<span class="${c}">${s}${d.toFixed(0)}%</span>`;}
+function deltaHtml(d){if(d===null)return '<span class="delta-neu">â€”</span>';const s=d>0?'+':'';const c=d>2?'delta-neg':d<-2?'delta-pos':'delta-neu';return`<span class="${c}">${s}${d.toFixed(0)}%</span>`;}
 function parseAiJson(raw){
   const cleaned=String(raw||'').replace(/```json|```/g,'').trim();
   try{return JSON.parse(cleaned);}
   catch{
     const s=cleaned.indexOf('{');const e=cleaned.lastIndexOf('}');
     if(s>=0&&e>s)return JSON.parse(cleaned.slice(s,e+1));
-    throw new Error('Réponse IA invalide (JSON non détecté).');
+    throw new Error('RÃ©ponse IA invalide (JSON non dÃ©tectÃ©).');
   }
 }
 
+function coverageYearsAsc(){
+  const maxY=new Date().getFullYear();
+  const years=[];
+  for(let y=MIN_COVERAGE_YEAR;y<=maxY;y++)years.push(String(y));
+  return years;
+}
+
+function coverageYearsDesc(){
+  return coverageYearsAsc().slice().reverse();
+}
+
+function isCoverageYear(y){
+  const n=parseInt(y,10);
+  const maxY=new Date().getFullYear();
+  return Number.isInteger(n)&&n>=MIN_COVERAGE_YEAR&&n<=maxY;
+}
+
+function parseAmount(v){
+  if(typeof v==='number')return Number.isFinite(v)?Math.max(0,v):0;
+  const s=String(v||'').replace(/\u00a0/g,'').replace(/\s/g,'').replace(/â‚¬/g,'').replace(',', '.').replace(/[^0-9.-]/g,'');
+  const n=parseFloat(s);
+  return Number.isFinite(n)?Math.max(0,n):0;
+}
+
+function normalizeDate(raw,fallbackYear){
+  const txt=String(raw||'').trim();
+  if(!txt){
+    if(isCoverageYear(fallbackYear))return `${fallbackYear}-01-01`;
+    return '';
+  }
+
+  if(/^\d{4}-\d{2}-\d{2}$/.test(txt)){
+    const y=txt.slice(0,4);
+    return isCoverageYear(y)?txt:'';
+  }
+
+  let m=txt.match(/^(\d{2})[\/.-](\d{2})[\/.-](\d{4})$/);
+  if(m){
+    const y=m[3];
+    if(!isCoverageYear(y))return '';
+    return `${y}-${m[2]}-${m[1]}`;
+  }
+
+  m=txt.match(/^(\d{2})[\/.-](\d{4})$/);
+  if(m){
+    const y=m[2];
+    if(!isCoverageYear(y))return '';
+    return `${y}-${m[1]}-01`;
+  }
+
+  m=txt.match(/^(\d{4})$/);
+  if(m&&isCoverageYear(m[1]))return `${m[1]}-01-01`;
+
+  m=txt.match(/(20\d{2})/);
+  if(m&&isCoverageYear(m[1]))return `${m[1]}-01-01`;
+
+  if(isCoverageYear(fallbackYear))return `${fallbackYear}-01-01`;
+  return '';
+}
+
+function normalizeCategory(raw){
+  const s=String(raw||'').trim();
+  if(CATS.includes(s))return s;
+  const l=s.toLowerCase();
+  if(/pharma|medicam|officine/.test(l))return 'Pharmacie';
+  if(/dent|orthodont/.test(l))return 'Dentiste';
+  if(/kine|kin\u00e9|osteo|ost\u00e9o|physio/.test(l))return 'KinÃƒÂ© / ostÃƒÂ©o';
+  if(/optique|lunette|verre|opti/.test(l))return 'Optique';
+  if(/hospital|clinique|urgence/.test(l))return 'Hospitalisation';
+  if(/general|gÃƒÂ©nÃƒÂ©ral|medecin|mÃƒÂ©decin|traitant/.test(l))return 'MÃƒÂ©decin gÃƒÂ©nÃƒÂ©raliste';
+  if(/special|spÃƒÂ©cial|cardio|dermato|orl|gyn|psy|chir/.test(l))return 'SpÃƒÂ©cialiste';
+  return 'Autre';
+}
+
+function normalizeStatut(raw,total,secu,mut){
+  const s=String(raw||'').toLowerCase();
+  const remb=secu+mut;
+  if(total>0&&remb>=total*0.995)return 'SoldÃƒÂ©';
+  if(s.includes('sold'))return 'SoldÃƒÂ©';
+  if(s.includes('mutuelle'))return 'En attente mutuelle';
+  if(s.includes('sÃƒÂ©cu')||s.includes('secu')){
+    if(s.includes('rembours'))return 'RemboursÃƒÂ© SÃƒÂ©cu';
+    return 'En attente SÃƒÂ©cu';
+  }
+  if(secu>0&&mut<=0)return 'RemboursÃƒÂ© SÃƒÂ©cu';
+  if(secu>0&&mut>0&&remb<total)return 'En attente mutuelle';
+  return 'En attente SÃƒÂ©cu';
+}
+
+function normalizeExtractedEntry(raw,fileName,fallbackYear){
+  const date=normalizeDate(raw?.date,fallbackYear);
+  if(!date)return null;
+  const montant=parseAmount(raw?.montant);
+  const secu=parseAmount(raw?.remboursement_secu);
+  const mut=parseAmount(raw?.remboursement_mutuelle);
+  return{
+    id:Date.now()+Math.floor(Math.random()*100000),
+    date,
+    praticien:String(raw?.praticien||'').trim()||'Inconnu',
+    categorie:normalizeCategory(raw?.categorie),
+    acte:String(raw?.acte||'').trim()||'Acte mÃƒÂ©dical',
+    montant,
+    remboursement_secu:Math.min(secu,montant),
+    remboursement_mutuelle:Math.min(mut,Math.max(0,montant-secu)),
+    statut:normalizeStatut(raw?.statut,montant,secu,mut),
+    notes:[String(raw?.notes||'').trim(),fileName?`Document: ${fileName}`:''].filter(Boolean).join(' | '),
+    source:'import_ia',
+  };
+}
+
+function dedupeEntries(entries){
+  const out=[];const seen=new Map();
+  const statusRank={'En attente SÃ©cu':0,'RemboursÃ© SÃ©cu':1,'En attente mutuelle':2,'SoldÃ©':3};
+  entries.forEach(e=>{
+    const k=[
+      String(e.date||'').trim(),
+      String(e.praticien||'').trim().toLowerCase(),
+      String(e.categorie||'').trim().toLowerCase(),
+      String(e.acte||'').trim().toLowerCase(),
+      (+e.montant||0).toFixed(2),
+    ].join('|');
+    if(!seen.has(k)){
+      seen.set(k,out.length);
+      out.push(e);
+      return;
+    }
+    const idx=seen.get(k);
+    const ex=out[idx];
+    const merged={
+      ...ex,
+      remboursement_secu:Math.max(+ex.remboursement_secu||0,+e.remboursement_secu||0),
+      remboursement_mutuelle:Math.max(+ex.remboursement_mutuelle||0,+e.remboursement_mutuelle||0),
+      statut:(statusRank[e.statut]??0)>(statusRank[ex.statut]??0)?e.statut:ex.statut,
+      notes:[String(ex.notes||'').trim(),String(e.notes||'').trim()].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' | '),
+      source:[String(ex.source||'').trim(),String(e.source||'').trim()].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('+')||ex.source||e.source,
+    };
+    out[idx]=merged;
+  });
+  return out;
+}
+
+function notifyEntriesUpdated(){
+  const stamp=Date.now().toString();
+  try{localStorage.setItem(ENTRIES_UPDATED_KEY,stamp);}catch{}
+  try{if(syncChannel)syncChannel.postMessage({type:'entries-updated',stamp});}catch{}
+  window.dispatchEvent(new CustomEvent('entries-updated',{detail:{stamp}}));
+}
+
+function flashRealtimePulse(){
+  const el=document.getElementById('main');
+  if(!el)return;
+  el.classList.remove('realtime-pulse');
+  void el.offsetWidth;
+  el.classList.add('realtime-pulse');
+}
+
+function refreshVisibleSections(){
+  renderDashboard();
+  buildPratDatalist();
+  const active=document.querySelector('.page.active')?.id;
+  if(active==='p-analyses')renderAnalyse(anSubview);
+  if(active==='p-praticiens')renderPraticiens();
+  if(active==='p-tiers')renderTP();
+  if(active==='p-contrat'){renderContracts();renderPlafonds();}
+  if(active==='p-export'){updateExpYears();renderExpSummary();}
+}
+
+function setupRealtimeSync(){
+  if(window.__santesuiviSyncReady)return;
+  window.__santesuiviSyncReady=true;
+
+  try{
+    if('BroadcastChannel' in window){
+      syncChannel=new BroadcastChannel(SYNC_CHANNEL_NAME);
+      syncChannel.onmessage=(ev)=>{
+        if(ev?.data?.type==='entries-updated'){
+          refreshVisibleSections();
+          flashRealtimePulse();
+        }
+      };
+    }
+  }catch{}
+
+  window.addEventListener('entries-updated',()=>{
+    refreshVisibleSections();
+    flashRealtimePulse();
+  });
+
+  window.addEventListener('storage',(ev)=>{
+    if(ev.key===SK||ev.key===ENTRIES_UPDATED_KEY){
+      refreshVisibleSections();
+      flashRealtimePulse();
+    }
+  });
+}
+
+function extractEntriesFromAi(parsed,fileName){
+  const arr=Array.isArray(parsed?.entries)?parsed.entries:(Array.isArray(parsed)?parsed:[parsed]);
+  const fallbackYear=String(parsed?.document_year||parsed?.annee||'');
+  return dedupeEntries(arr.map(it=>normalizeExtractedEntry(it,fileName,fallbackYear)).filter(Boolean));
+}
+
+function buildYearButtons(targetId,current,handlerName){
+  const box=document.getElementById(targetId);
+  if(!box)return;
+  const years=coverageYearsDesc();
+  box.innerHTML=[
+    `<button class="pbtn ${current==='all'?'active':''}" onclick="${handlerName}('all',this)">Tout</button>`,
+    ...years.map(y=>`<button class="pbtn ${current===y?'active':''}" onclick="${handlerName}('${y}',this)">${y}</button>`),
+  ].join('');
+}
+
 let charts={};
-let pendingEntry=null;
+let pendingEntries=[];
 let currentPeriod=yrNow();
 let anSubview='comparaison';
 let anPeriod='all';
@@ -470,20 +696,24 @@ let searchCatFilter=null;
 // INIT
 // ============================================================
 function init(){
+  setupRealtimeSync();
   // seed demo data
   if(!ld().length){
     const demo=[
-      {id:1,date:'2025-01-15',praticien:'Dr. Martin',categorie:'Médecin généraliste',acte:'Consultation',montant:30,remboursement_secu:16.5,remboursement_mutuelle:11,statut:'Soldé',source:'demo'},
-      {id:2,date:'2025-02-03',praticien:'Dr. Lefèvre',categorie:'Spécialiste',acte:'Consultation cardio',montant:80,remboursement_secu:28,remboursement_mutuelle:40,statut:'Soldé',source:'demo'},
-      {id:3,date:'2025-02-20',praticien:'Pharmacie du Centre',categorie:'Pharmacie',acte:'Médicaments',montant:45.8,remboursement_secu:32,remboursement_mutuelle:0,statut:'Remboursé Sécu',source:'demo'},
-      {id:4,date:'2025-03-10',praticien:'Dr. Cazals',categorie:'Dentiste',acte:'Détartrage',montant:57.5,remboursement_secu:0,remboursement_mutuelle:40,statut:'En attente mutuelle',source:'demo'},
-      {id:5,date:'2025-04-05',praticien:'Cabinet Kiné Rodez',categorie:'Kiné / ostéo',acte:'Séance x5',montant:67.5,remboursement_secu:52,remboursement_mutuelle:13,statut:'Soldé',source:'demo'},
-      {id:6,date:'2024-03-12',praticien:'Dr. Martin',categorie:'Médecin généraliste',acte:'Consultation',montant:30,remboursement_secu:16.5,remboursement_mutuelle:11,statut:'Soldé',source:'demo'},
-      {id:7,date:'2024-06-20',praticien:'Dr. Cazals',categorie:'Dentiste',acte:'Couronne',montant:450,remboursement_secu:75,remboursement_mutuelle:200,statut:'Soldé',source:'demo'},
-      {id:8,date:'2024-11-08',praticien:'Pharmacie du Centre',categorie:'Pharmacie',acte:'Médicaments',montant:38,remboursement_secu:25,remboursement_mutuelle:0,statut:'Soldé',source:'demo'},
+      {id:1,date:'2025-01-15',praticien:'Dr. Martin',categorie:'MÃ©decin gÃ©nÃ©raliste',acte:'Consultation',montant:30,remboursement_secu:16.5,remboursement_mutuelle:11,statut:'SoldÃ©',source:'demo'},
+      {id:2,date:'2025-02-03',praticien:'Dr. LefÃ¨vre',categorie:'SpÃ©cialiste',acte:'Consultation cardio',montant:80,remboursement_secu:28,remboursement_mutuelle:40,statut:'SoldÃ©',source:'demo'},
+      {id:3,date:'2025-02-20',praticien:'Pharmacie du Centre',categorie:'Pharmacie',acte:'MÃ©dicaments',montant:45.8,remboursement_secu:32,remboursement_mutuelle:0,statut:'RemboursÃ© SÃ©cu',source:'demo'},
+      {id:4,date:'2025-03-10',praticien:'Dr. Cazals',categorie:'Dentiste',acte:'DÃ©tartrage',montant:57.5,remboursement_secu:0,remboursement_mutuelle:40,statut:'En attente mutuelle',source:'demo'},
+      {id:5,date:'2025-04-05',praticien:'Cabinet KinÃ© Rodez',categorie:'KinÃ© / ostÃ©o',acte:'SÃ©ance x5',montant:67.5,remboursement_secu:52,remboursement_mutuelle:13,statut:'SoldÃ©',source:'demo'},
+      {id:6,date:'2024-03-12',praticien:'Dr. Martin',categorie:'MÃ©decin gÃ©nÃ©raliste',acte:'Consultation',montant:30,remboursement_secu:16.5,remboursement_mutuelle:11,statut:'SoldÃ©',source:'demo'},
+      {id:7,date:'2024-06-20',praticien:'Dr. Cazals',categorie:'Dentiste',acte:'Couronne',montant:450,remboursement_secu:75,remboursement_mutuelle:200,statut:'SoldÃ©',source:'demo'},
+      {id:8,date:'2024-11-08',praticien:'Pharmacie du Centre',categorie:'Pharmacie',acte:'MÃ©dicaments',montant:38,remboursement_secu:25,remboursement_mutuelle:0,statut:'SoldÃ©',source:'demo'},
     ];
     sd(demo);
   }
+  const existing=ld();
+  const cleaned=dedupeEntries(existing);
+  if(cleaned.length!==existing.length)sd(cleaned);
   // populate selects
   const smCat=document.getElementById('sm-cat');
   CATS.forEach(c=>{const o=document.createElement('option');o.value=c;o.text=c;smCat.appendChild(o);});
@@ -501,6 +731,10 @@ function init(){
   const cfg=lcfg();
   const sr=document.getElementById('seuil-rac');
   if(sr)sr.value=cfg.seuil_rac_mensuel||200;
+  currentPeriod=isCoverageYear(yrNow())?yrNow():'all';
+  anPeriod='all';
+  buildYearButtons('db-period-buttons',currentPeriod,'setPeriod');
+  buildYearButtons('an-period-buttons',anPeriod,'setAnPeriod');
   renderDashboard();
   renderTP();
   renderContracts();
@@ -528,9 +762,12 @@ function nav(page,btn){
 // ============================================================
 function setPeriod(p,btn){
   currentPeriod=p;
-  document.querySelectorAll('.period-sel .pbtn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('db-period-label').textContent=(p==='all'?'Toutes années':p)+' · toutes catégories';
+  buildYearButtons('db-period-buttons',currentPeriod,'setPeriod');
+  if(btn){
+    document.querySelectorAll('#db-period-buttons .pbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  document.getElementById('db-period-label').textContent=(p==='all'?'Toutes annÃ©es':p)+' Â· toutes catÃ©gories';
   renderDashboard();
 }
 
@@ -559,18 +796,18 @@ function renderDashboard(){
   yEntries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0));});
   const racMois=ld().filter(e=>e.date&&e.date.startsWith(yr+'-'+String(mNow()).padStart(2,'0'))).reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
   let alerts='';
-  if(racMois>(cfg.seuil_rac_mensuel||200))alerts+=`<div class="alert alert-warn">RAC ce mois : ${fmt(racMois)} — seuil de ${fmt(cfg.seuil_rac_mensuel||200)} dépassé</div>`;
-  (cfg.plafonds||[]).forEach(p=>{const c=bycat[p.categorie]||0;const pct=p.montant>0?c/p.montant*100:0;if(pct>=90)alerts+=`<div class="alert alert-danger">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommé (${fmt(c)}/${fmt(p.montant)})</div>`;else if(pct>=70)alerts+=`<div class="alert alert-warn">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommé</div>`;});
+  if(racMois>(cfg.seuil_rac_mensuel||200))alerts+=`<div class="alert alert-warn">RAC ce mois : ${fmt(racMois)} â€” seuil de ${fmt(cfg.seuil_rac_mensuel||200)} dÃ©passÃ©</div>`;
+  (cfg.plafonds||[]).forEach(p=>{const c=bycat[p.categorie]||0;const pct=p.montant>0?c/p.montant*100:0;if(pct>=90)alerts+=`<div class="alert alert-danger">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommÃ© (${fmt(c)}/${fmt(p.montant)})</div>`;else if(pct>=70)alerts+=`<div class="alert alert-warn">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommÃ©</div>`;});
   // tp validity
   const tp=ltp();
-  if(tp.validite){const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));if(diff<30&&diff>=0)alerts+=`<div class="alert alert-warn">Carte tiers payant expire dans ${diff} jour${diff>1?'s':''}</div>`;else if(diff<0)alerts+=`<div class="alert alert-danger">Carte tiers payant expirée depuis ${-diff} jour${-diff>1?'s':''}</div>`;}
+  if(tp.validite){const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));if(diff<30&&diff>=0)alerts+=`<div class="alert alert-warn">Carte tiers payant expire dans ${diff} jour${diff>1?'s':''}</div>`;else if(diff<0)alerts+=`<div class="alert alert-danger">Carte tiers payant expirÃ©e depuis ${-diff} jour${-diff>1?'s':''}</div>`;}
   document.getElementById('db-alerts').innerHTML=alerts;
   // metrics
   document.getElementById('db-metrics').innerHTML=`
-    <div class="mc"><div class="mc-label">Total dépensé</div><div class="mc-val">${fmts(m.total)} €</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
-    <div class="mc"><div class="mc-label">Remb. Sécu</div><div class="mc-val pos">${fmts(m.secu)} €</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
-    <div class="mc"><div class="mc-label">Remb. mutuelle</div><div class="mc-val pos">${fmts(m.mut)} €</div><div class="mc-sub">${m.total>0?(m.mut/m.total*100).toFixed(0):0}%</div></div>
-    <div class="mc"><div class="mc-label">Reste à charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)} €</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
+    <div class="mc"><div class="mc-label">Total dÃ©pensÃ©</div><div class="mc-val">${fmts(m.total)} â‚¬</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
+    <div class="mc"><div class="mc-label">Remb. SÃ©cu</div><div class="mc-val pos">${fmts(m.secu)} â‚¬</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
+    <div class="mc"><div class="mc-label">Remb. mutuelle</div><div class="mc-val pos">${fmts(m.mut)} â‚¬</div><div class="mc-sub">${m.total>0?(m.mut/m.total*100).toFixed(0):0}%</div></div>
+    <div class="mc"><div class="mc-label">Reste Ã  charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)} â‚¬</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
   renderDbTab('list');
 }
 
@@ -586,70 +823,104 @@ function switchDbTab(tab,btn){
 function renderDbTab(tab){
   const entries=filterPeriod(ld()).slice().reverse();
   if(tab==='list'){
-    if(!entries.length){document.getElementById('db-tab-list').innerHTML='<div class="empty-state"><div class="empty-icon">📋</div>Aucune entrée — importez votre premier document</div>';return;}
+    if(!entries.length){document.getElementById('db-tab-list').innerHTML='<div class="empty-state"><div class="empty-icon">ðŸ“‹</div>Aucune entrÃ©e â€” importez votre premier document</div>';return;}
     const rows=entries.slice(0,20).map(e=>{
       const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);
-      const si=STATUTS.indexOf(e.statut||'En attente Sécu');
-      return`<tr><td style="color:var(--text3)">${e.date||'—'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'—'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td></tr>`;
+      const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');
+      return`<tr><td style="color:var(--text3)">${e.date||'â€”'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'â€”'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente SÃ©cu'}</span></td></tr>`;
     }).join('');
-    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entrées supplémentaires</div>`:''}`;
+    document.getElementById('db-tab-list').innerHTML=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th>Cat.</th><th class="r">Montant</th><th class="r">Remb.</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div>${entries.length>20?`<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">+${entries.length-20} entrÃ©es supplÃ©mentaires</div>`:''}`;
   }
   if(tab==='chart'){
     const byM=Array(12).fill(0).map(()=>({d:0,r:0}));
     entries.forEach(e=>{if(!e.date)return;const m=parseInt(e.date.split('-')[1])-1;if(m>=0&&m<12){byM[m].d+=(+e.montant||0);byM[m].r+=(+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0);}});
     if(charts['db-main']){charts['db-main'].destroy();}
-    setTimeout(()=>{charts['db-main']=new Chart(document.getElementById('c-db-main'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'Dépensé',data:byM.map(m=>+m.d.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3},{label:'Remboursé',data:byM.map(m=>+m.r.toFixed(2)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+    setTimeout(()=>{charts['db-main']=new Chart(document.getElementById('c-db-main'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'DÃ©pensÃ©',data:byM.map(m=>+m.d.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3},{label:'RemboursÃ©',data:byM.map(m=>+m.r.toFixed(2)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
   }
   if(tab==='cats'){
     const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';if(!bycat[k])bycat[k]={t:0,s:0,mu:0};bycat[k].t+=(+e.montant||0);bycat[k].s+=(+e.remboursement_secu||0);bycat[k].mu+=(+e.remboursement_mutuelle||0);});
     const grand=Object.values(bycat).reduce((s,v)=>s+v.t,0);
     const html=Object.entries(bycat).sort((a,b)=>b[1].t-a[1].t).map(([cat,v])=>{
       const pct=grand>0?v.t/grand*100:0;const rac=v.t-v.s-v.mu;const col=CAT_COLORS[cat]||'#888';
-      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>Sécu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
+      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>SÃ©cu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
     }).join('');
-    document.getElementById('db-tab-cats').innerHTML=html||'<div class="empty-state">Aucune donnée</div>';
+    document.getElementById('db-tab-cats').innerHTML=html||'<div class="empty-state">Aucune donnÃ©e</div>';
   }
 }
 
 // ============================================================
 // AI IMPORT
 // ============================================================
-function handleDrop(e){e.preventDefault();document.getElementById('dropZone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)analyzeDoc(f);}
-function handleFile(f){if(f)analyzeDoc(f);}
+function handleDrop(e){e.preventDefault();document.getElementById('dropZone').classList.remove('drag');handleFiles(e.dataTransfer.files);}
+function handleFile(f){if(f)handleFiles([f]);}
 
-async function analyzeDoc(file){
+async function analyzeSingleDoc(file,ctContent){
+  const toB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
+  const b64=await toB64(file);
+  const mt=file.type||'image/jpeg';
+  const isImg=mt.startsWith('image/');
+  const prompt=`Tu es un extracteur de remboursements santÃ© franÃ§ais.
+${ctContent?`Contexte contrat:\n${ctContent}\n\n`:''}
+Lis le document et retourne UNIQUEMENT un JSON valide (sans markdown) au format:
+{"document_year":"YYYY ou null","entries":[{"date":"YYYY-MM-DD","praticien":"","categorie":"${CATS.join('|')}","acte":"","montant":0,"remboursement_secu":0,"remboursement_mutuelle":0,"statut":"En attente SÃ©cu","notes":""}]}
+RÃ¨gles:
+- Extraire toutes les lignes de soins/remboursements primordiales.
+- AnnÃ©es autorisÃ©es: de ${MIN_COVERAGE_YEAR} Ã  ${new Date().getFullYear()}.
+- Si jour inconnu: mettre le premier jour du mois; si mois inconnu: 01-01.
+- montants numÃ©riques uniquement (pas de symbole).
+- Si aucune ligne exploitable: {"document_year":null,"entries":[]}.`;
+  const msgContent=isImg?[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}];
+  const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:2200,messages:[{role:'user',content:msgContent}]})});
+  const data=await resp.json();
+  if(!resp.ok||data?.error)throw new Error(data?.error||`Erreur IA (${resp.status})`);
+  const raw=data.content?.find(c=>c.type==='text')?.text||'{}';
+  const parsed=parseAiJson(raw);
+  return extractEntriesFromAi(parsed,file.name);
+}
+
+async function handleFiles(fileList){
+  const files=Array.from(fileList||[]).filter(Boolean);
+  if(!files.length)return;
   document.getElementById('aiProc').classList.add('on');
   document.getElementById('aiResult').classList.remove('on');
-  const toB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
+  document.querySelector('#aiProc span').textContent=`ChatGPT analyse ${files.length} document${files.length>1?'s':''}â€¦`;
   try{
-    const b64=await toB64(file);
-    const mt=file.type||'image/jpeg';
-    const isImg=mt.startsWith('image/');
     const ctContent=lct().map(c=>c.nom+': '+c.content.slice(0,500)).join('\n\n');
-    const prompt=`Tu es un assistant d'extraction de données médicales français. ${ctContent?'Contrat santé de référence:\n'+ctContent+'\n\n':''}Analyse ce document et retourne UNIQUEMENT un objet JSON (sans markdown) avec:\n{"date":"YYYY-MM-DD","praticien":"","categorie":"${CATS.join('|')}","acte":"","montant":0,"remboursement_secu":0,"remboursement_mutuelle":0,"statut":"En attente Sécu","notes":""}. Si absent: null ou 0.`;
-    const msgContent=isImg?[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}];
-    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:1000,messages:[{role:'user',content:msgContent}]})});
-    const data=await resp.json();
-    if(!resp.ok||data?.error)throw new Error(data?.error||`Erreur IA (${resp.status})`);
-    const raw=data.content?.find(c=>c.type==='text')?.text||'{}';
-    const parsed=parseAiJson(raw);
-    pendingEntry=parsed;
-    const labels={date:'Date',praticien:'Praticien',categorie:'Catégorie',acte:'Acte',montant:'Montant',remboursement_secu:'Remb. Sécu',remboursement_mutuelle:'Remb. mutuelle',statut:'Statut'};
-    document.getElementById('aiFields').innerHTML=Object.entries(labels).map(([k,l])=>`<div class="ai-field"><span class="ai-field-label">${l}</span><span style="font-weight:500">${typeof parsed[k]==='number'?fmt(parsed[k]):(parsed[k]||'—')}</span></div>`).join('');
+    let extracted=[];
+    for(const file of files){
+      const rows=await analyzeSingleDoc(file,ctContent);
+      extracted=extracted.concat(rows);
+    }
+    pendingEntries=dedupeEntries(extracted).filter(e=>isCoverageYear(e.date.slice(0,4)));
+    if(!pendingEntries.length)throw new Error(`Aucune donnÃ©e exploitable dÃ©tectÃ©e (${MIN_COVERAGE_YEAR} â†’ ${new Date().getFullYear()}).`);
+    const years=[...new Set(pendingEntries.map(e=>e.date.slice(0,4)))].sort();
+    const preview=pendingEntries.slice(0,8).map(e=>`<div class="ai-field"><span class="ai-field-label">${e.date} â€¢ ${e.praticien}</span><span style="font-weight:500">${fmt(e.montant)}</span></div>`).join('');
+    document.getElementById('aiFields').innerHTML=`
+      <div class="ai-field"><span class="ai-field-label">Lignes extraites</span><span style="font-weight:700">${pendingEntries.length}</span></div>
+      <div class="ai-field"><span class="ai-field-label">PÃ©riode couverte</span><span style="font-weight:500">${years[0]} â†’ ${years[years.length-1]}</span></div>
+      ${preview}
+      ${pendingEntries.length>8?`<div style="font-size:11px;color:var(--text3)">+${pendingEntries.length-8} lignes supplÃ©mentaires</div>`:''}
+    `;
     document.getElementById('aiProc').classList.remove('on');
     document.getElementById('aiResult').classList.add('on');
   }catch(err){
     document.getElementById('aiProc').classList.remove('on');
     document.getElementById('aiFields').innerHTML=`<div style="color:var(--danger)">Erreur: ${err.message}</div>`;
     document.getElementById('aiResult').classList.add('on');
-    pendingEntry=null;
+    pendingEntries=[];
+  }finally{
+    document.querySelector('#aiProc span').textContent='ChatGPT analyse le documentâ€¦';
+    const fi=document.getElementById('fileInput');
+    if(fi)fi.value='';
   }
 }
 
 function confirmEntry(){
-  if(!pendingEntry)return;
-  const data=ld();data.push({...pendingEntry,id:Date.now()});sd(data);
-  pendingEntry=null;
+  if(!pendingEntries.length)return;
+  const data=ld();
+  const merged=dedupeEntries(data.concat(pendingEntries));
+  sd(merged);
+  pendingEntries=[];
   document.getElementById('aiResult').classList.remove('on');
   renderDashboard();
   updateExpYears();
@@ -663,7 +934,7 @@ function cycleStatutById(id){
   const idx=data.findIndex(e=>e.id===id);
   if(idx<0)return;
   const cycle=STATUTS;
-  const ci=cycle.indexOf(data[idx].statut||'En attente Sécu');
+  const ci=cycle.indexOf(data[idx].statut||'En attente SÃ©cu');
   data[idx].statut=cycle[(ci+1)%cycle.length];
   sd(data);renderDashboard();
   if(anSubview==='remboursements')renderAnalyse('remboursements');
@@ -681,14 +952,14 @@ function updateRACPreview(){
   const m=parseFloat(document.getElementById('sm-mnt').value)||0;
   const s=parseFloat(document.getElementById('sm-secu').value)||0;
   const mu=parseFloat(document.getElementById('sm-mut').value)||0;
-  document.getElementById('sm-rac').textContent=`Reste à charge : ${fmt(m-s-mu)}`;
+  document.getElementById('sm-rac').textContent=`Reste Ã  charge : ${fmt(m-s-mu)}`;
 }
 
 function saveSaisie(){
   const mnt=parseFloat(document.getElementById('sm-mnt').value)||0;
   if(!mnt){document.getElementById('sm-mnt').focus();return;}
   const entry={id:Date.now(),date:document.getElementById('sm-date').value,categorie:document.getElementById('sm-cat').value,praticien:document.getElementById('sm-prat').value.trim().replace(/ \(.*\)$/,''),acte:document.getElementById('sm-acte').value.trim(),montant:mnt,remboursement_secu:parseFloat(document.getElementById('sm-secu').value)||0,remboursement_mutuelle:parseFloat(document.getElementById('sm-mut').value)||0,statut:document.getElementById('sm-stat').value,notes:document.getElementById('sm-notes').value.trim(),source:'manuelle'};
-  const data=ld();data.push(entry);sd(data);
+  const data=dedupeEntries(ld().concat(entry));sd(data);
   const ok=document.getElementById('sm-ok');ok.style.display='flex';setTimeout(()=>ok.style.display='none',2500);
   resetSaisie();renderDashboard();updateExpYears();
 }
@@ -703,7 +974,15 @@ function resetSaisie(){
 // ============================================================
 // ANALYSES
 // ============================================================
-function setAnPeriod(p,btn){anPeriod=p;document.querySelectorAll('#p-analyses .period-sel .pbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAnalyse(anSubview);}
+function setAnPeriod(p,btn){
+  anPeriod=p;
+  buildYearButtons('an-period-buttons',anPeriod,'setAnPeriod');
+  if(btn){
+    document.querySelectorAll('#an-period-buttons .pbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  renderAnalyse(anSubview);
+}
 
 function switchAnalyse(sub,btn){
   anSubview=sub;
@@ -720,7 +999,7 @@ function renderAnalyse(sub){
 }
 
 function getYears(entries){
-  const y=new Set(entries.map(e=>e.date?e.date.slice(0,4):null).filter(Boolean));
+  const y=new Set(entries.map(e=>e.date?e.date.slice(0,4):null).filter(yr=>isCoverageYear(yr)));
   return[...(y)].sort().reverse();
 }
 
@@ -731,59 +1010,59 @@ function filterAn(entries){
 
 function rComparaison(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-comparaison');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée disponible</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e disponible</div>';return;}
   const byY={};years.forEach(y=>{byY[y]=entries.filter(e=>e.date&&e.date.startsWith(y));});
   const rows=years.map((y,i)=>{
     const s=computeMetrics(byY[y]);const rac=s.total-s.secu-s.mut;const prev=years[i+1];const d=prev?delta(s.total,computeMetrics(byY[prev]).total):null;
     return`<tr><td style="font-weight:500">${y}</td><td class="r mono">${fmt(s.total)}</td><td class="r mono" style="color:var(--accent)">${fmt(s.secu)}</td><td class="r mono" style="color:var(--accent)">${fmt(s.mut)}</td><td class="r mono" style="color:${rac>300?'var(--warn)':'var(--text)'}">${fmt(rac)}</td><td class="r">${s.taux.toFixed(0)}%</td><td class="r">${deltaHtml(d)}</td></tr>`;
   }).join('');
-  el.innerHTML=`<div class="card"><div class="card-title">Comparaison annuelle</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Année</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th><th class="r">vs N-1</th></tr></thead><tbody>${rows}</tbody></table></div></div>
-  <div class="card"><div class="card-title">Évolution annuelle</div><div class="chart-wrap" style="height:240px"><canvas id="c-comp" role="img" aria-label="Comparaison annuelle">.</canvas></div></div>
-  <div class="card"><div class="card-title">Répartition par catégorie (empilée)</div><div class="chart-wrap" style="height:${Math.max(180,years.length*60+80)}px"><canvas id="c-comp-cat" role="img" aria-label="Catégories par année">.</canvas></div></div>`;
+  el.innerHTML=`<div class="card"><div class="card-title">Comparaison annuelle</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>AnnÃ©e</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th><th class="r">vs N-1</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card"><div class="card-title">Ã‰volution annuelle</div><div class="chart-wrap" style="height:240px"><canvas id="c-comp" role="img" aria-label="Comparaison annuelle">.</canvas></div></div>
+  <div class="card"><div class="card-title">RÃ©partition par catÃ©gorie (empilÃ©e)</div><div class="chart-wrap" style="height:${Math.max(180,years.length*60+80)}px"><canvas id="c-comp-cat" role="img" aria-label="CatÃ©gories par annÃ©e">.</canvas></div></div>`;
   setTimeout(()=>{
     if(charts['comp']){charts['comp'].destroy();}
     const yrS=[...years].reverse();
-    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'Dépensé',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.total-s.secu-s.mut).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
+    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'DÃ©pensÃ©',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.total-s.secu-s.mut).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});
     if(charts['comp-cat']){charts['comp-cat'].destroy();}
     const catDS=CATS.map(cat=>({label:cat,data:yrS.map(y=>+(byY[y].filter(e=>e.categorie===cat).reduce((s,e)=>s+(+e.montant||0),0)).toFixed(2)),backgroundColor:CAT_COLORS[cat]+'AA',borderRadius:2})).filter(d=>d.data.some(v=>v>0));
-    charts['comp-cat']=new Chart(document.getElementById('c-comp-cat'),{type:'bar',data:{labels:yrS,datasets:catDS},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},color:'#9E9B96',boxWidth:10,padding:6}}},scales:{x:{stacked:true,ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{stacked:true,ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
+    charts['comp-cat']=new Chart(document.getElementById('c-comp-cat'),{type:'bar',data:{labels:yrS,datasets:catDS},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},color:'#9E9B96',boxWidth:10,padding:6}}},scales:{x:{stacked:true,ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{stacked:true,ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});
   },30);
 }
 
 function rMensuel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-mensuel');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
   const refY=anPeriod==='all'?years[0]:anPeriod;
   const compY=years[years.indexOf(refY)+1]||null;
   const build=y=>{const m=Array(12).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const mi=parseInt(e.date.split('-')[1])-1;if(mi>=0&&mi<12){m[mi].t+=(+e.montant||0);m[mi].s+=(+e.remboursement_secu||0);m[mi].mu+=(+e.remboursement_mutuelle||0);}});return m;};
   const cur=build(refY);const prev=compY?build(compY):null;
-  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'—'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'—'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'—'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'—'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'—'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'â€”'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'â€”'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'â€”'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map((y,i)=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('mensuel')">${y}</button>`).join('')}</div>
-  <div class="card"><div class="card-title">Synthèse mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">Évol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
-  <div class="card"><div class="card-title">Dépenses mensuelles${compY?' — '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="Dépenses mensuelles">.</canvas></div></div>`;
-  setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+  <div class="card"><div class="card-title">SynthÃ¨se mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">Ã‰vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card"><div class="card-title">DÃ©penses mensuelles${compY?' â€” '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="DÃ©penses mensuelles">.</canvas></div></div>`;
+  setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rTrimestriel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-trimestriel');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
   const refY=anPeriod==='all'?years[0]:anPeriod;const compY=years[years.indexOf(refY)+1]||null;
   const buildQ=y=>{const q=Array(4).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const m=parseInt(e.date.split('-')[1])-1;const qi=Math.floor(m/3);if(qi>=0&&qi<4){q[qi].t+=(+e.montant||0);q[qi].s+=(+e.remboursement_secu||0);q[qi].mu+=(+e.remboursement_mutuelle||0);}});return q;};
   const cur=buildQ(refY);const prev=compY?buildQ(compY):null;
-  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'—'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'—'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'—'}</td><td class="r mono">${c.t>0?fmt(rac):'—'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'—'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'—'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'â€”'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'â€”'}</td><td class="r mono">${c.t>0?fmt(rac):'â€”'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'â€”'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'â€”'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map(y=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('trimestriel')">${y}</button>`).join('')}</div>
-  <div class="card"><div class="card-title">Synthèse trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">Évol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
-  <div class="card"><div class="card-title">Dépenses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="Dépenses trimestrielles">.</canvas></div></div>`;
-  setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+  <div class="card"><div class="card-title">SynthÃ¨se trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">DÃ©pensÃ©</th><th class="r">SÃ©cu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">Ã‰vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="card"><div class="card-title">DÃ©penses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="DÃ©penses trimestrielles">.</canvas></div></div>`;
+  setTimeout(()=>{if(charts['trim']){charts['trim'].destroy();}const ds=[{label:refY,data:cur.map(q=>+q.t.toFixed(2)),backgroundColor:'#1A4D3A88',borderRadius:4,borderColor:'#1A4D3A',borderWidth:1}];if(prev)ds.push({label:compY,data:prev.map(q=>+q.t.toFixed(2)),backgroundColor:'#C8A96E66',borderRadius:4,borderColor:'#C8A96E',borderWidth:1});charts['trim']=new Chart(document.getElementById('c-trim'),{type:'bar',data:{labels:QQ,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'â‚¬'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rAnnuel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-annuel');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
   const summaries=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const bycat={};ye.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+(+e.montant||0);});const top=Object.entries(bycat).sort((a,b)=>b[1]-a[1])[0];return{...s,year:y,rac:s.total-s.secu-s.mut,top};});
   const best=summaries.reduce((a,b)=>b.rac<a.rac?b:a,summaries[0]);
   el.innerHTML=summaries.map((s,i)=>{const prev=summaries[i+1];const d=prev?delta(s.total,prev.total):null;
-    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?` · principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">Dépensé</div><div class="mc-val">${fmts(s.total)} €</div></div><div class="mc"><div class="mc-label">Sécu</div><div class="mc-val pos">${fmts(s.secu)} €</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)} €</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)} €</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
+    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?` Â· principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">DÃ©pensÃ©</div><div class="mc-val">${fmts(s.total)} â‚¬</div></div><div class="mc"><div class="mc-label">SÃ©cu</div><div class="mc-val pos">${fmts(s.secu)} â‚¬</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)} â‚¬</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)} â‚¬</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
 }
 
 function rPratStats(){
@@ -791,22 +1070,22 @@ function rPratStats(){
   const byP={};entries.forEach(e=>{const k=e.praticien||'Inconnu';if(!byP[k])byP[k]={t:0,s:0,mu:0,n:0,cat:e.categorie||'Autre',dates:[]};byP[k].t+=(+e.montant||0);byP[k].s+=(+e.remboursement_secu||0);byP[k].mu+=(+e.remboursement_mutuelle||0);byP[k].n++;if(e.date)byP[k].dates.push(e.date);});
   const sorted=Object.keys(byP).sort((a,b)=>byP[b].t-byP[a].t);
   const rows=sorted.map((p,i)=>{const v=byP[p];const rac=v.t-v.s-v.mu;const taux=v.t>0?(v.s+v.mu)/v.t*100:0;const [abg,atx]=avCol(i);const last=v.dates.sort().pop();
-    return`<div class="data-row"><div class="avatar" style="background:${abg};color:${atx}">${initials(p)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p}</div><div style="font-size:11px;color:var(--text3)">${v.n} visite${v.n>1?'s':''}${last?' · dernière '+last:''}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(v.t)}</div><div style="font-size:11px;color:${rac>50?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)} · ${taux.toFixed(0)}%</div></div></div>`;}).join('');
-  el.innerHTML=`<div class="card"><div class="card-title">Dépenses par praticien</div>${rows||'<div class="empty-state">Aucune donnée</div>'}</div>`;
+    return`<div class="data-row"><div class="avatar" style="background:${abg};color:${atx}">${initials(p)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p}</div><div style="font-size:11px;color:var(--text3)">${v.n} visite${v.n>1?'s':''}${last?' Â· derniÃ¨re '+last:''}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(v.t)}</div><div style="font-size:11px;color:${rac>50?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)} Â· ${taux.toFixed(0)}%</div></div></div>`;}).join('');
+  el.innerHTML=`<div class="card"><div class="card-title">DÃ©penses par praticien</div>${rows||'<div class="empty-state">Aucune donnÃ©e</div>'}</div>`;
 }
 
 function rRemboursements(){
   const entries=ld();const el=document.getElementById('an-remboursements');
-  const pending=entries.filter(e=>e.statut!=='Soldé').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const pending=entries.filter(e=>e.statut!=='SoldÃ©').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const montantAtt=pending.reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
-  const rows=pending.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente Sécu');return`<tr><td style="color:var(--text3)">${e.date||'—'}</td><td>${e.praticien||'—'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td></tr>`;}).join('');
-  el.innerHTML=`<div class="metrics-grid"><div class="mc"><div class="mc-label">En attente</div><div class="mc-val warn">${pending.length}</div></div><div class="mc"><div class="mc-label">Montant att.</div><div class="mc-val ${montantAtt>100?'warn':''}">${fmt(montantAtt)}</div></div><div class="mc"><div class="mc-label">Soldés</div><div class="mc-val pos">${entries.filter(e=>e.statut==='Soldé').length}</div></div></div>
+  const rows=pending.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');return`<tr><td style="color:var(--text3)">${e.date||'â€”'}</td><td>${e.praticien||'â€”'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente SÃ©cu'}</span></td></tr>`;}).join('');
+  el.innerHTML=`<div class="metrics-grid"><div class="mc"><div class="mc-label">En attente</div><div class="mc-val warn">${pending.length}</div></div><div class="mc"><div class="mc-label">Montant att.</div><div class="mc-val ${montantAtt>100?'warn':''}">${fmt(montantAtt)}</div></div><div class="mc"><div class="mc-label">SoldÃ©s</div><div class="mc-val pos">${entries.filter(e=>e.statut==='SoldÃ©').length}</div></div></div>
   <div class="card"><div class="card-title">En attente de remboursement</div>${pending.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th class="r">Montant</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div><div style="font-size:11px;color:var(--text3);margin-top:8px">Cliquez sur le statut pour le faire avancer</div>`:'<div class="empty-state">Aucun remboursement en attente</div>'}</div>`;
 }
 
 function rRecherche(){
   const el=document.getElementById('an-recherche');
-  el.innerHTML=`<div class="search-box"><input type="text" id="srch" placeholder="Praticien, acte, catégorie, notes, date…" oninput="doSearch(this.value)"></div>
+  el.innerHTML=`<div class="search-box"><input type="text" id="srch" placeholder="Praticien, acte, catÃ©gorie, notes, dateâ€¦" oninput="doSearch(this.value)"></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem" id="srch-filters">
     <button class="stab active" onclick="setSrchCat(null,this)">Tout</button>
     ${CATS.map(c=>`<button class="stab" onclick="setSrchCat('${c}',this)">${c}</button>`).join('')}
@@ -821,10 +1100,10 @@ function doSearch(q){
   const entries=ld();const term=q.toLowerCase().trim();
   let res=entries.filter(e=>(!term||(e.praticien||'').toLowerCase().includes(term)||(e.acte||'').toLowerCase().includes(term)||(e.categorie||'').toLowerCase().includes(term)||(e.notes||'').toLowerCase().includes(term)||(e.date||'').includes(term))&&(!searchCatFilter||e.categorie===searchCatFilter)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const el=document.getElementById('srch-results');if(!el)return;
-  if(!res.length){el.innerHTML='<div class="empty-state">Aucun résultat</div>';return;}
-  const rows=res.slice(0,50).map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente Sécu');
-    return`<div class="data-row" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">${e.praticien||'—'}</span><span style="font-size:11px;color:var(--text3)">${e.date||''}</span><span class="status-pill ${STAT_CLS[si>=0?si:0]}">${e.statut||'En attente Sécu'}</span></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${e.acte||''} ${e.notes?'· '+e.notes:''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-weight:500;font-variant-numeric:tabular-nums">${fmt(+e.montant||0)}</div><div style="font-size:11px;color:${rac>0?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}</div></div></div>`;}).join('');
-  el.innerHTML=`<div class="card"><div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">${res.length} résultat${res.length>1?'s':''}</div>${rows}</div>`;
+  if(!res.length){el.innerHTML='<div class="empty-state">Aucun rÃ©sultat</div>';return;}
+  const rows=res.slice(0,50).map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente SÃ©cu');
+    return`<div class="data-row" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">${e.praticien||'â€”'}</span><span style="font-size:11px;color:var(--text3)">${e.date||''}</span><span class="status-pill ${STAT_CLS[si>=0?si:0]}">${e.statut||'En attente SÃ©cu'}</span></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${e.acte||''} ${e.notes?'Â· '+e.notes:''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-weight:500;font-variant-numeric:tabular-nums">${fmt(+e.montant||0)}</div><div style="font-size:11px;color:${rac>0?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}</div></div></div>`;}).join('');
+  el.innerHTML=`<div class="card"><div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">${res.length} rÃ©sultat${res.length>1?'s':''}</div>${rows}</div>`;
 }
 
 // ============================================================
@@ -833,9 +1112,9 @@ function doSearch(q){
 function renderPraticiens(){
   const prats=lp();const entries=ld();const el=document.getElementById('prat-list');
   const byP={};entries.forEach(e=>{const k=e.praticien||'';if(k)byP[k]=(byP[k]||0)+(+e.montant||0);});
-  if(!prats.length){el.innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">👨‍⚕️</div>Aucun praticien — cliquez sur + Ajouter</div></div>';return;}
+  if(!prats.length){el.innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">ðŸ‘¨â€âš•ï¸</div>Aucun praticien â€” cliquez sur + Ajouter</div></div>';return;}
   el.innerHTML=prats.map((p,i)=>{const [abg,atx]=avCol(i);const tot=byP[p.nom]||0;
-    return`<div class="card"><div style="display:flex;align-items:flex-start;gap:12px"><div class="avatar" style="background:${abg};color:${atx};width:44px;height:44px;font-size:14px;margin-top:2px">${initials(p.nom)}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${p.nom}</div><div style="font-size:12px;color:var(--text3)">${p.specialite||''} ${p.ville?'· '+p.ville:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">${p.tel?`<a href="tel:${p.tel}" style="font-size:12px;color:var(--accent)">${p.tel}</a>`:''} ${p.email?`<a href="mailto:${p.email}" style="font-size:12px;color:var(--accent)">${p.email}</a>`:''} ${p.rdv?`<a href="${p.rdv}" style="font-size:12px;color:var(--accent2)">Prendre RDV</a>`:''} ${p.rpps?`<span style="font-size:11px;color:var(--text3)">RPPS ${p.rpps}</span>`:''}</div>${p.notes?`<div style="font-size:12px;color:var(--text2);margin-top:5px;font-style:italic">${p.notes}</div>`:''}</div><div style="text-align:right;flex-shrink:0">${tot>0?`<div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(tot)}</div><div style="font-size:11px;color:var(--text3)">dépensés</div>`:''}<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openPratForm(${i})">Modifier</button><button class="btn btn-danger btn-sm" onclick="delPrat(${i})">Suppr.</button></div></div></div></div>`;}).join('');
+    return`<div class="card"><div style="display:flex;align-items:flex-start;gap:12px"><div class="avatar" style="background:${abg};color:${atx};width:44px;height:44px;font-size:14px;margin-top:2px">${initials(p.nom)}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${p.nom}</div><div style="font-size:12px;color:var(--text3)">${p.specialite||''} ${p.ville?'Â· '+p.ville:''}</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">${p.tel?`<a href="tel:${p.tel}" style="font-size:12px;color:var(--accent)">${p.tel}</a>`:''} ${p.email?`<a href="mailto:${p.email}" style="font-size:12px;color:var(--accent)">${p.email}</a>`:''} ${p.rdv?`<a href="${p.rdv}" style="font-size:12px;color:var(--accent2)">Prendre RDV</a>`:''} ${p.rpps?`<span style="font-size:11px;color:var(--text3)">RPPS ${p.rpps}</span>`:''}</div>${p.notes?`<div style="font-size:12px;color:var(--text2);margin-top:5px;font-style:italic">${p.notes}</div>`:''}</div><div style="text-align:right;flex-shrink:0">${tot>0?`<div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(tot)}</div><div style="font-size:11px;color:var(--text3)">dÃ©pensÃ©s</div>`:''}<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openPratForm(${i})">Modifier</button><button class="btn btn-danger btn-sm" onclick="delPrat(${i})">Suppr.</button></div></div></div></div>`;}).join('');
 }
 
 function openPratForm(idx){
@@ -843,15 +1122,15 @@ function openPratForm(idx){
   document.getElementById('prat-form-wrap').innerHTML=`<div class="card"><div class="card-title">${idx>=0?'Modifier':'Nouveau'} praticien</div>
     <div class="fg2">
       <div class="field"><label>Nom</label><input id="pf-nom" value="${p.nom||''}" placeholder="Dr. Dupont"></div>
-      <div class="field"><label>Spécialité</label><input id="pf-spec" value="${p.specialite||''}" placeholder="Cardiologue"></div>
-      <div class="field"><label>Téléphone</label><input id="pf-tel" value="${p.tel||''}" placeholder="05 65 xx xx xx"></div>
+      <div class="field"><label>SpÃ©cialitÃ©</label><input id="pf-spec" value="${p.specialite||''}" placeholder="Cardiologue"></div>
+      <div class="field"><label>TÃ©lÃ©phone</label><input id="pf-tel" value="${p.tel||''}" placeholder="05 65 xx xx xx"></div>
       <div class="field"><label>Email</label><input id="pf-email" value="${p.email||''}" placeholder="cabinet@..."></div>
       <div class="field"><label>Adresse</label><input id="pf-adr" value="${p.adresse||''}" placeholder="12 rue de la Paix"></div>
       <div class="field"><label>Ville</label><input id="pf-ville" value="${p.ville||''}" placeholder="Rodez"></div>
       <div class="field"><label>RPPS</label><input id="pf-rpps" value="${p.rpps||''}" placeholder="10 chiffres"></div>
-      <div class="field"><label>Lien RDV (Doctolib…)</label><input id="pf-rdv" value="${p.rdv||''}" placeholder="https://doctolib.fr/..."></div>
+      <div class="field"><label>Lien RDV (Doctolibâ€¦)</label><input id="pf-rdv" value="${p.rdv||''}" placeholder="https://doctolib.fr/..."></div>
     </div>
-    <div class="field"><label>Notes</label><textarea id="pf-notes" placeholder="Rappeler avant…">${p.notes||''}</textarea></div>
+    <div class="field"><label>Notes</label><textarea id="pf-notes" placeholder="Rappeler avantâ€¦">${p.notes||''}</textarea></div>
     <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePrat(${idx})">Enregistrer</button><button class="btn btn-secondary" onclick="document.getElementById('prat-form-wrap').innerHTML=''">Annuler</button></div>
   </div>`;
   document.getElementById('prat-form-wrap').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -880,14 +1159,14 @@ function renderTP(){
   const tp=ltp();
   const el=document.getElementById('tp-card-render');
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim());
-  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'—';
+  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'â€”';
 
   // validity alert
   let tpAlerts='';
   if(tp.validite){
     const diff=Math.round((new Date(tp.validite)-new Date())/(1000*3600*24));
-    if(diff<0)tpAlerts=`<div class="alert alert-danger">Carte expirée depuis ${-diff} jour${-diff>1?'s':''} — renouvelez votre contrat</div>`;
-    else if(diff<30)tpAlerts=`<div class="alert alert-warn">Expire dans ${diff} jour${diff>1?'s':''} — pensez à renouveler</div>`;
+    if(diff<0)tpAlerts=`<div class="alert alert-danger">Carte expirÃ©e depuis ${-diff} jour${-diff>1?'s':''} â€” renouvelez votre contrat</div>`;
+    else if(diff<30)tpAlerts=`<div class="alert alert-warn">Expire dans ${diff} jour${diff>1?'s':''} â€” pensez Ã  renouveler</div>`;
     else tpAlerts=`<div class="alert alert-ok">Carte valide jusqu'au ${validStr}</div>`;
   }
   document.getElementById('tp-alerts').innerHTML=tpAlerts;
@@ -895,18 +1174,18 @@ function renderTP(){
   el.innerHTML=`<div class="tp-card" id="tp-card-print">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem;position:relative;z-index:1">
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.12em;opacity:.55;margin-bottom:2px">Attestation tiers payant</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;letter-spacing:.01em">${tp.organisme||'Mutuelle'}</div></div>
-      <div style="text-align:right"><div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:.08em">Validité</div><div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent2)">${validStr}</div></div>
+      <div style="text-align:right"><div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:.08em">ValiditÃ©</div><div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent2)">${validStr}</div></div>
     </div>
     <div style="position:relative;z-index:1">
-      <div class="tp-row"><div class="tp-label">Titulaire</div><div class="tp-value">${tp.nom||'—'}</div></div>
+      <div class="tp-row"><div class="tp-label">Titulaire</div><div class="tp-value">${tp.nom||'â€”'}</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-        <div class="tp-row"><div class="tp-label">N° adhérent</div><div class="tp-value" style="font-size:13px">${tp.adherent||'—'}</div></div>
-        <div class="tp-row"><div class="tp-label">N° SS</div><div class="tp-value" style="font-size:13px;word-break:break-all">${tp.nss||'—'}</div></div>
+        <div class="tp-row"><div class="tp-label">NÂ° adhÃ©rent</div><div class="tp-value" style="font-size:13px">${tp.adherent||'â€”'}</div></div>
+        <div class="tp-row"><div class="tp-label">NÂ° SS</div><div class="tp-value" style="font-size:13px;word-break:break-all">${tp.nss||'â€”'}</div></div>
         ${tp.contrat?`<div class="tp-row"><div class="tp-label">Contrat</div><div class="tp-value" style="font-size:12px">${tp.contrat}</div></div>`:''}
-        ${tp.amo?`<div class="tp-row"><div class="tp-label">AMO / Sécu</div><div class="tp-value" style="font-size:12px">${tp.amo}</div></div>`:''}
+        ${tp.amo?`<div class="tp-row"><div class="tp-label">AMO / SÃ©cu</div><div class="tp-value" style="font-size:12px">${tp.amo}</div></div>`:''}
       </div>
       ${garanties.length?`<div class="tp-chips">${garanties.map(g=>`<div class="tp-chip">${g}</div>`).join('')}</div>`:''}
-      ${tp.tel?`<div style="margin-top:.75rem;font-size:11px;opacity:.6">Tél. mutuelle : ${tp.tel}</div>`:''}
+      ${tp.tel?`<div style="margin-top:.75rem;font-size:11px;opacity:.6">TÃ©l. mutuelle : ${tp.tel}</div>`:''}
       ${tp.qr?`<div style="margin-top:.5rem;font-size:11px;opacity:.6;word-break:break-all">${tp.qr}</div>`:''}
     </div>
   </div>`;
@@ -914,9 +1193,9 @@ function renderTP(){
 
 function printTP(){
   const tp=ltp();
-  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'—';
+  const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'â€”';
   const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`<li>${g}</li>`).join('');
-  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tiers Payant — ${tp.nom||''}</title>
+  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tiers Payant â€” ${tp.nom||''}</title>
   <style>body{margin:0;padding:20px;font-family:'Helvetica Neue',sans-serif;background:#f4f4f4}
   .card{background:linear-gradient(135deg,#1A4D3A,#0F3328);color:#fff;border-radius:20px;padding:28px;max-width:400px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,.3)}
   .org{font-size:22px;font-weight:700;letter-spacing:.01em;margin-bottom:20px}.sub{font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
@@ -929,38 +1208,38 @@ function printTP(){
   <body><div class="card">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
     <div><div class="sub">Attestation tiers payant</div><div class="org">${tp.organisme||'Mutuelle'}</div></div>
-    <div style="text-align:right"><div class="sub">Validité</div><div style="font-size:14px;font-weight:700;color:#C8A96E">${validStr}</div></div>
+    <div style="text-align:right"><div class="sub">ValiditÃ©</div><div style="font-size:14px;font-weight:700;color:#C8A96E">${validStr}</div></div>
   </div>
-  <div><div class="sub">Titulaire</div><div class="val big">${tp.nom||'—'}</div></div>
+  <div><div class="sub">Titulaire</div><div class="val big">${tp.nom||'â€”'}</div></div>
   <div class="grid">
-    <div><div class="sub">N° adhérent</div><div class="val">${tp.adherent||'—'}</div></div>
-    <div><div class="sub">N° Sécurité sociale</div><div class="val" style="font-size:12px;word-break:break-all">${tp.nss||'—'}</div></div>
+    <div><div class="sub">NÂ° adhÃ©rent</div><div class="val">${tp.adherent||'â€”'}</div></div>
+    <div><div class="sub">NÂ° SÃ©curitÃ© sociale</div><div class="val" style="font-size:12px;word-break:break-all">${tp.nss||'â€”'}</div></div>
     ${tp.contrat?`<div><div class="sub">Contrat</div><div class="val">${tp.contrat}</div></div>`:''}
-    ${tp.amo?`<div><div class="sub">AMO / Sécu</div><div class="val">${tp.amo}</div></div>`:''}
+    ${tp.amo?`<div><div class="sub">AMO / SÃ©cu</div><div class="val">${tp.amo}</div></div>`:''}
   </div>
   ${garanties?`<div style="margin-top:14px"><div class="sub" style="margin-bottom:6px">Garanties</div><ul style="margin:0;padding-left:16px;font-size:12px;line-height:1.8">${garanties}</ul></div>`:''}
-  <div class="footer">${tp.tel?`Tél : ${tp.tel}  `:''} ${tp.qr||''}</div>
+  <div class="footer">${tp.tel?`TÃ©l : ${tp.tel}  `:''} ${tp.qr||''}</div>
   </div></body></html>`;
   const w=window.open('','_blank','width=460,height=700');w.document.write(html);w.document.close();setTimeout(()=>w.print(),300);
 }
 
 function sendTPMail(){
   const tp=ltp();
-  const nom=tp.nom||'Assuré';
+  const nom=tp.nom||'AssurÃ©';
   const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-  const subject=encodeURIComponent(`${nom} | ATTESTATION DE TIERS PAYANT | Validité ${validStr}`);
-  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`  • ${g}`).join('\n');
-  const body=encodeURIComponent(`ATTESTATION DE TIERS PAYANT\n${'─'.repeat(35)}\n\nOrganisme : ${tp.organisme||'—'}\nTitulaire : ${nom}\nN° adhérent : ${tp.adherent||'—'}\nN° SS : ${tp.nss||'—'}\nContrat : ${tp.contrat||'—'}\nAMO / Sécu : ${tp.amo||'—'}\nValidité : ${validStr}\n\nGaranties principales :\n${garanties||'—'}\n\nTél. mutuelle : ${tp.tel||'—'}\n${tp.qr?'Réf : '+tp.qr:''}\n\nDocument généré automatiquement par SantéSuivi`);
+  const subject=encodeURIComponent(`${nom} | ATTESTATION DE TIERS PAYANT | ValiditÃ© ${validStr}`);
+  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`  â€¢ ${g}`).join('\n');
+  const body=encodeURIComponent(`ATTESTATION DE TIERS PAYANT\n${'â”€'.repeat(35)}\n\nOrganisme : ${tp.organisme||'â€”'}\nTitulaire : ${nom}\nNÂ° adhÃ©rent : ${tp.adherent||'â€”'}\nNÂ° SS : ${tp.nss||'â€”'}\nContrat : ${tp.contrat||'â€”'}\nAMO / SÃ©cu : ${tp.amo||'â€”'}\nValiditÃ© : ${validStr}\n\nGaranties principales :\n${garanties||'â€”'}\n\nTÃ©l. mutuelle : ${tp.tel||'â€”'}\n${tp.qr?'RÃ©f : '+tp.qr:''}\n\nDocument gÃ©nÃ©rÃ© automatiquement par SantÃ©Suivi`);
   window.location.href=`mailto:?subject=${subject}&body=${body}`;
-  const ok=document.getElementById('tp-send-ok');ok.textContent='Ouverture de votre messagerie…';ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
+  const ok=document.getElementById('tp-send-ok');ok.textContent='Ouverture de votre messagerieâ€¦';ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
 }
 
 function copyTPText(){
   const tp=ltp();
   const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR'):'';
-  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`• ${g}`).join('\n');
-  const txt=`TIERS PAYANT — ${tp.organisme||''}\nTitulaire : ${tp.nom||''}\nN° adhérent : ${tp.adherent||''}\nN° SS : ${tp.nss||''}\nValidité : ${validStr}\n${garanties?'Garanties :\n'+garanties:''}`;
-  navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>{const ok=document.getElementById('tp-send-ok');ok.textContent='Texte copié dans le presse-papiers';ok.style.display='flex';setTimeout(()=>ok.style.display='none',2500);});
+  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`â€¢ ${g}`).join('\n');
+  const txt=`TIERS PAYANT â€” ${tp.organisme||''}\nTitulaire : ${tp.nom||''}\nNÂ° adhÃ©rent : ${tp.adherent||''}\nNÂ° SS : ${tp.nss||''}\nValiditÃ© : ${validStr}\n${garanties?'Garanties :\n'+garanties:''}`;
+  navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>{const ok=document.getElementById('tp-send-ok');ok.textContent='Texte copiÃ© dans le presse-papiers';ok.style.display='flex';setTimeout(()=>ok.style.display='none',2500);});
 }
 
 // ============================================================
@@ -968,17 +1247,17 @@ function copyTPText(){
 // ============================================================
 function renderContracts(){
   const cts=lct();const el=document.getElementById('contract-list');
-  if(!cts.length){el.innerHTML='<div class="alert alert-info" style="margin-bottom:1rem">Aucun document contractuel — ajoutez vos CGV ou conditions particulières ci-dessous.</div>';return;}
-  el.innerHTML=cts.map((c,i)=>`<div class="contract-item"><div class="contract-badge"><svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" stroke="#fff" stroke-width="1.2"/><path d="M10 2v3h3" stroke="#fff" stroke-width="1.2"/><path d="M5 7h6M5 9.5h6M5 12h4" stroke="#fff" stroke-width="1" opacity=".6"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${c.nom}</div><div style="font-size:11px;color:var(--text3)">${c.type} · ${c.content.length} caractères</div></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="analyzeContract(${i})">Analyser par IA</button><button class="btn btn-danger btn-sm" onclick="delContract(${i})">Suppr.</button></div></div>`).join('');
+  if(!cts.length){el.innerHTML='<div class="alert alert-info" style="margin-bottom:1rem">Aucun document contractuel â€” ajoutez vos CGV ou conditions particuliÃ¨res ci-dessous.</div>';return;}
+  el.innerHTML=cts.map((c,i)=>`<div class="contract-item"><div class="contract-badge"><svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" stroke="#fff" stroke-width="1.2"/><path d="M10 2v3h3" stroke="#fff" stroke-width="1.2"/><path d="M5 7h6M5 9.5h6M5 12h4" stroke="#fff" stroke-width="1" opacity=".6"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${c.nom}</div><div style="font-size:11px;color:var(--text3)">${c.type} Â· ${c.content.length} caractÃ¨res</div></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="analyzeContract(${i})">Analyser par IA</button><button class="btn btn-danger btn-sm" onclick="delContract(${i})">Suppr.</button></div></div>`).join('');
 }
 
 function renderPlafonds(){
   const cfg=lcfg();const el=document.getElementById('plafonds-list');const sr=document.getElementById('seuil-rac');if(sr)sr.value=cfg.seuil_rac_mensuel||200;
   const yr=yrNow();const entries=ld().filter(e=>e.date&&e.date.startsWith(yr));
   const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0));});
-  if(!(cfg.plafonds||[]).length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">Aucun plafond configuré</div>';return;}
+  if(!(cfg.plafonds||[]).length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">Aucun plafond configurÃ©</div>';return;}
   el.innerHTML=(cfg.plafonds||[]).map((p,i)=>{const c=bycat[p.categorie]||0;const pct=Math.min(100,p.montant>0?c/p.montant*100:0);const fc=pct>=90?'#C0392B':pct>=70?'#B7600A':'#1A4D3A';
-    return`<div style="margin-bottom:1rem"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:500">${p.categorie}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--text3)">${fmt(c)} / ${fmt(p.montant)}</span><button class="btn btn-danger btn-sm" style="padding:3px 8px" onclick="delPlafond(${i})">×</button></div></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${fc}"></div></div><div style="font-size:11px;color:var(--text3);margin-top:3px">${pct.toFixed(0)}% — reste ${fmt(Math.max(0,p.montant-c))}</div></div>`;}).join('');
+    return`<div style="margin-bottom:1rem"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:500">${p.categorie}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--text3)">${fmt(c)} / ${fmt(p.montant)}</span><button class="btn btn-danger btn-sm" style="padding:3px 8px" onclick="delPlafond(${i})">Ã—</button></div></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${fc}"></div></div><div style="font-size:11px;color:var(--text3);margin-top:3px">${pct.toFixed(0)}% â€” reste ${fmt(Math.max(0,p.montant-c))}</div></div>`;}).join('');
 }
 
 function addPlafond(){
@@ -1010,19 +1289,19 @@ function delContract(i){const cts=lct();cts.splice(i,1);sct(cts);renderContracts
 async function analyzeContract(idx){
   const cts=lct();const c=cts[idx];if(!c)return;
   const el=document.getElementById('contract-analysis');const res=document.getElementById('contract-analysis-result');
-  el.style.display='block';res.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--info)"><div class="spinner"></div> Analyse en cours…</div>';
+  el.style.display='block';res.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--info)"><div class="spinner"></div> Analyse en coursâ€¦</div>';
   try{
-    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:1000,messages:[{role:'user',content:`Analyse ce document de contrat santé français et extrais en JSON (sans markdown) :
+    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:AI_MODEL,max_tokens:1000,messages:[{role:'user',content:`Analyse ce document de contrat santÃ© franÃ§ais et extrais en JSON (sans markdown) :
 {"plafonds":[{"categorie":"","montant":0,"periode":"annuel"}],"taux_remboursement":[{"categorie":"","taux_secu":0,"taux_mutuelle":0}],"informations_cles":[""],"points_attention":[""]}
 Document : ${c.content.slice(0,4000)}`}]})});
     const data=await resp.json();
     if(!resp.ok||data?.error)throw new Error(data?.error||`Erreur IA (${resp.status})`);
     const raw=data.content?.find(x=>x.type==='text')?.text||'{}';
     const parsed=parseAiJson(raw);
-    let html=`<div style="font-size:12px;color:var(--text2)"><div style="font-weight:500;margin-bottom:8px;color:var(--text)">Résumé automatique de "${c.nom}"</div>`;
-    if(parsed.informations_cles?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Informations clés</div>${parsed.informations_cles.map(i=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">• ${i}</div>`).join('')}</div>`;}
-    if(parsed.plafonds?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Plafonds détectés</div>${parsed.plafonds.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.categorie||'?'} : ${fmt(p.montant||0)} / ${p.periode||'an'}</div>`).join('')}</div><button class="btn btn-primary btn-sm" onclick='applyPlafonds(${JSON.stringify(parsed.plafonds)})' style="margin-bottom:10px">Appliquer ces plafonds</button>`;}
-    if(parsed.points_attention?.length){html+=`<div><div class="card-subtitle" style="color:var(--warn)">Points d'attention</div>${parsed.points_attention.map(p=>`<div class="alert alert-warn" style="margin-bottom:4px;font-size:11px">• ${p}</div>`).join('')}</div>`;}
+    let html=`<div style="font-size:12px;color:var(--text2)"><div style="font-weight:500;margin-bottom:8px;color:var(--text)">RÃ©sumÃ© automatique de "${c.nom}"</div>`;
+    if(parsed.informations_cles?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Informations clÃ©s</div>${parsed.informations_cles.map(i=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">â€¢ ${i}</div>`).join('')}</div>`;}
+    if(parsed.plafonds?.length){html+=`<div style="margin-bottom:10px"><div class="card-subtitle">Plafonds dÃ©tectÃ©s</div>${parsed.plafonds.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.categorie||'?'} : ${fmt(p.montant||0)} / ${p.periode||'an'}</div>`).join('')}</div><button class="btn btn-primary btn-sm" onclick='applyPlafonds(${JSON.stringify(parsed.plafonds)})' style="margin-bottom:10px">Appliquer ces plafonds</button>`;}
+    if(parsed.points_attention?.length){html+=`<div><div class="card-subtitle" style="color:var(--warn)">Points d'attention</div>${parsed.points_attention.map(p=>`<div class="alert alert-warn" style="margin-bottom:4px;font-size:11px">â€¢ ${p}</div>`).join('')}</div>`;}
     html+='</div>';res.innerHTML=html;
   }catch(err){res.innerHTML=`<div class="alert alert-danger">Erreur : ${err.message}</div>`;}
 }
@@ -1030,14 +1309,14 @@ Document : ${c.content.slice(0,4000)}`}]})});
 function applyPlafonds(plafonds){
   const cfg=lcfg();if(!cfg.plafonds)cfg.plafonds=[];
   plafonds.forEach(p=>{if(!p.categorie||!p.montant)return;const ex=cfg.plafonds.findIndex(x=>x.categorie===p.categorie);if(ex>=0)cfg.plafonds[ex].montant=p.montant;else cfg.plafonds.push({categorie:p.categorie,montant:p.montant});});
-  scfg(cfg);alert('Plafonds appliqués ! Rendez-vous dans l\'onglet Contrat pour les voir.');
+  scfg(cfg);alert('Plafonds appliquÃ©s ! Rendez-vous dans l\'onglet Contrat pour les voir.');
 }
 
 // ============================================================
 // EXPORT
 // ============================================================
 function updateExpYears(){
-  const entries=ld();const years=getYears(entries);const el=document.getElementById('exp-yr');
+  const years=coverageYearsDesc();const el=document.getElementById('exp-yr');
   if(!el)return;
   while(el.options.length>1)el.remove(1);
   years.forEach(y=>{const o=document.createElement('option');o.value=y;o.text=y;el.appendChild(o);});
@@ -1045,17 +1324,17 @@ function updateExpYears(){
 
 function exportCSV(){
   const entries=ld();const yr=document.getElementById('exp-yr').value;const cat=document.getElementById('exp-cat').value;const stat=document.getElementById('exp-stat').value;
-  let data=entries;if(yr!=='all')data=data.filter(e=>e.date&&e.date.startsWith(yr));if(cat)data=data.filter(e=>e.categorie===cat);if(stat)data=data.filter(e=>(e.statut||'En attente Sécu')===stat);
+  let data=entries;if(yr!=='all')data=data.filter(e=>e.date&&e.date.startsWith(yr));if(cat)data=data.filter(e=>e.categorie===cat);if(stat)data=data.filter(e=>(e.statut||'En attente SÃ©cu')===stat);
   data=data.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const headers=['Date','Praticien','Catégorie','Acte','Montant (€)','Remb. Sécu (€)','Remb. Mutuelle (€)','RAC (€)','Taux couverture (%)','Statut','Notes','Source'];
+  const headers=['Date','Praticien','CatÃ©gorie','Acte','Montant (â‚¬)','Remb. SÃ©cu (â‚¬)','Remb. Mutuelle (â‚¬)','RAC (â‚¬)','Taux couverture (%)','Statut','Notes','Source'];
   const rows=data.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const taux=(+e.montant||0)>0?((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))/(+e.montant||0)*100:0;return[e.date||'',e.praticien||'',e.categorie||'',e.acte||'',(+e.montant||0).toFixed(2),(+e.remboursement_secu||0).toFixed(2),(+e.remboursement_mutuelle||0).toFixed(2),rac.toFixed(2),taux.toFixed(0),e.statut||'',e.notes||'',e.source||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';');});
   const csv='\uFEFF'+headers.join(';')+'\n'+rows.join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`sante_${yr==='all'?'tout':yr}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);
-  const ok=document.getElementById('exp-ok');ok.textContent=`${data.length} ligne${data.length>1?'s':''} exportée${data.length>1?'s':''}`;ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
+  const ok=document.getElementById('exp-ok');ok.textContent=`${data.length} ligne${data.length>1?'s':''} exportÃ©e${data.length>1?'s':''}`;ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
 }
 
 function exportPraticiens(){
-  const prats=lp();const headers=['Nom','Spécialité','Téléphone','Email','Adresse','Ville','RPPS','Lien RDV','Notes'];
+  const prats=lp();const headers=['Nom','SpÃ©cialitÃ©','TÃ©lÃ©phone','Email','Adresse','Ville','RPPS','Lien RDV','Notes'];
   const rows=prats.map(p=>[p.nom,p.specialite,p.tel,p.email,p.adresse,p.ville,p.rpps,p.rdv,p.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(';'));
   const csv='\uFEFF'+headers.join(';')+'\n'+rows.join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='praticiens.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -1068,8 +1347,8 @@ function exportFullBackup(){
 
 function renderExpSummary(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('exp-annual-table');
-  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
-  el.innerHTML=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('')||'<div class="empty-state">Aucune donnée</div>';
+  if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnÃ©e</div>';return;}
+  el.innerHTML=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('')||'<div class="empty-state">Aucune donnÃ©e</div>';
 }
 
 // Fix typo in rTrimestriel (y axis key)
