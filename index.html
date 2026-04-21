@@ -1295,6 +1295,7 @@ let currentDetailEntryId=null;
 let dbSelectedIds=new Set();
 let dbVisibleIds=[];
 let bulkDraft={cat:'',prat:'',stat:''};
+let tpOriginalFiles=[];
 
 // ============================================================
 // INIT
@@ -1877,6 +1878,7 @@ Règles:
 async function handleTpFiles(fileList){
   const files=Array.from(fileList||[]).filter(Boolean);
   if(!files.length)return;
+  tpOriginalFiles=files;
   const proc=document.getElementById('tpAiProc');
   const result=document.getElementById('tpAiResult');
   const fields=document.getElementById('tpAiFields');
@@ -2015,15 +2017,40 @@ function printTP(){
   const w=window.open('','_blank','width=460,height=700');w.document.write(html);w.document.close();setTimeout(()=>w.print(),300);
 }
 
-function sendTPMail(){
+async function sendTPMail(){
   const tp=ltp();
   const nom=tp.nom||'Assuré';
   const validStr=tp.validite?new Date(tp.validite).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-  const subject=encodeURIComponent(`${nom} | ATTESTATION DE TIERS PAYANT | Validité ${validStr}`);
-  const garanties=(tp.garanties||'').split('\n').filter(g=>g.trim()).map(g=>`  ⬢ ${g}`).join('\n');
-  const body=encodeURIComponent(`ATTESTATION DE TIERS PAYANT\n${'?'.repeat(35)}\n\nOrganisme : ${tp.organisme||'?'}\nTitulaire : ${nom}\nN° adhrent : ${tp.adherent||'?'}\nN° SS : ${tp.nss||'?'}\nContrat : ${tp.contrat||'?'}\nAMO / Sécu : ${tp.amo||'?'}\nValidit : ${validStr}\n\nGaranties principales :\n${garanties||'?'}\n\nTl. mutuelle : ${tp.tel||'?'}\n${tp.qr?'Rf : '+tp.qr:''}\n\nDocument gnr automatiquement par SantSuivi`);
-  window.location.href=`mailto:?subject=${subject}&body=${body}`;
-  const ok=document.getElementById('tp-send-ok');ok.textContent='Ouverture de votre messagerie⬦';ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
+  const ok=document.getElementById('tp-send-ok');
+
+  if(!tpOriginalFiles.length){
+    ok.textContent='Importez d’abord la carte originale (image/PDF) pour l’envoyer en pièce jointe.';
+    ok.style.display='flex';
+    setTimeout(()=>ok.style.display='none',4200);
+    return;
+  }
+
+  const title=`${nom} | ATTESTATION DE TIERS PAYANT | Validité ${validStr}`;
+  const text='Carte tiers payant en pièce jointe (document original).';
+
+  try{
+    if(navigator.canShare&&navigator.canShare({files:tpOriginalFiles})&&navigator.share){
+      await navigator.share({title,text,files:tpOriginalFiles});
+      ok.textContent='Partage ouvert avec le document original en pièce jointe.';
+      ok.style.display='flex';
+      setTimeout(()=>ok.style.display='none',3200);
+      return;
+    }
+  }catch(err){
+    ok.textContent=`Envoi annulé: ${err?.message||'opération interrompue'}`;
+    ok.style.display='flex';
+    setTimeout(()=>ok.style.display='none',3200);
+    return;
+  }
+
+  ok.textContent='Pièce jointe automatique non supportée sur ce navigateur. Utilisez un navigateur/app compatible partage de fichiers.';
+  ok.style.display='flex';
+  setTimeout(()=>ok.style.display='none',5200);
 }
 
 function copyTPText(){
