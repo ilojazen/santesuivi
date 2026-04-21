@@ -883,17 +883,8 @@ function normalizeUiText(root=document.body){
 function startUiTextAutoNormalize(){
   if(window.__santesuiviTextFixReady)return;
   window.__santesuiviTextFixReady=true;
-  let queued=false;
-  const run=()=>{
-    if(queued)return;
-    queued=true;
-    requestAnimationFrame(()=>{
-      queued=false;
-      normalizeUiText();
-    });
-  };
-  const obs=new MutationObserver(run);
-  obs.observe(document.body,{childList:true,subtree:true,characterData:true});
+  // Disabled continuous DOM observer to protect INP.
+  // Text normalization still runs explicitly after render/navigation.
 }
 
 function flashRealtimePulse(){
@@ -1747,7 +1738,6 @@ function deleteEntryById(id,silent){
   if(next.length===data.length)return;
   sd(next);
   if(Number(currentDetailEntryId)===n)currentDetailEntryId=next[0]?.id??null;
-  refreshVisibleSections();
 }
 
 function deleteCurrentDetailEntry(){
@@ -1766,9 +1756,6 @@ function deleteSelectedYear(){
   if(!ok)return;
   sd(data.filter(e=>!(e.date&&String(e.date).startsWith(yr))));
   if(getEntryById(currentDetailEntryId)==null)currentDetailEntryId=ld()[0]?.id??null;
-  updateExpYears();
-  renderExpSummary();
-  refreshVisibleSections();
   showExpOk(`${count} ligne(s) supprimée(s) pour ${yr}.`,false);
 }
 
@@ -1874,17 +1861,8 @@ function resetAllData(){
   }catch{}
   pendingEntries=[];
   currentDetailEntryId=null;
-  resetSaisie();
-  renderDashboard();
-  renderTP();
-  renderContracts();
-  renderPlafonds();
-  renderPraticiens();
-  updateExpYears();
-  renderExpSummary();
-  buildPratDatalist();
   notifyEntriesUpdated();
-  normalizeUiText();
+  resetSaisie();
   showExpOk('Remise Ã  zÃ©ro terminÃ©e. Vous pouvez refaire une saisie propre.',false);
 }
 
