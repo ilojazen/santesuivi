@@ -473,6 +473,11 @@ const AV_COLORS=[['#E8F3EE','#1A4D3A'],['#EDE9FF','#5B21B6'],['#FBF5EA','#8B5B10
 const STAT_CLS=['s0','s1','s2','s3'];
 const AI_MODEL='gpt-4.1-mini';
 const MIN_COVERAGE_YEAR=2020;
+const V5_EXCLUDED_IMPORTS={
+  '2005.pdf':'Bénéficiaire Jade Lou (hors périmètre principal).',
+  '2810.pdf':'Flux mutuelle partiel (consigné, non intégré dans V5).',
+  '0212.pdf':'Flux mutuelle partiel (consigné, non intégré dans V5).',
+};
 const ENTRIES_UPDATED_KEY=`${SK}_updated_at`;
 const SYNC_CHANNEL_NAME='santesuivi-realtime-v1';
 let syncChannel=null;
@@ -630,6 +635,10 @@ function parseSignedAmount(v){
   return Number.isFinite(n)?n:0;
 }
 
+function normalizedFileName(name){
+  return fixMojibakeText(String(name||'').trim()).toLowerCase();
+}
+
 function normalizeDate(raw,fallbackYear){
   const txt=String(raw||'').trim();
   if(!txt){
@@ -670,6 +679,8 @@ function normalizeCategory(raw){
   const s=fixMojibakeText(String(raw||'').trim());
   if(CATS.includes(s))return s;
   const l=s.toLowerCase();
+  if(/teleconsult|t[ée]l[ée]consult/.test(l))return 'Spécialiste';
+  if(/bio|laboratoire|analyse|pr[ée]lev/.test(l))return 'Autre';
   if(/pharma|medicam|officine/.test(l))return 'Pharmacie';
   if(/dent|orthodont/.test(l))return 'Dentiste';
   if(/kine|kin\u00e9|osteo|ost\u00e9o|physio/.test(l))return 'Kiné / ostéo';
@@ -736,6 +747,26 @@ function normalizeReimbursementBySource(sourceType,montant,secu,mut){
   return{secu:s,mut:m};
 }
 
+function entryRetenue(e){
+  return +(
+    e?.retenues_cpam??
+    e?.retenue_cpam??
+    e?.franchise_medicale??
+    0
+  )||0;
+}
+
+function entryRacHorsRetenue(e){
+  const m=+e?.montant||0;
+  const s=+e?.remboursement_secu||0;
+  const mu=+e?.remboursement_mutuelle||0;
+  return Math.max(0,m-s-mu);
+}
+
+function entryRacTotal(e){
+  return +(entryRacHorsRetenue(e)+entryRetenue(e)).toFixed(2);
+}
+
 function detectRetentionFromRaw(raw){
   const text=fixMojibakeText([
     raw?.acte,raw?.acte_code,raw?.contexte_acte,raw?.notes,raw?.statut,raw?.categorie,
@@ -775,7 +806,8 @@ function applyRetentionDeductions(entries,deductions){
       const secu=+t.remboursement_secu||0;
       if(secu<=0)continue;
       const cut=Math.min(secu,remaining);
-      t.remboursement_secu=+(secu-cut).toFixed(2);
+      const retenue=entryRetenue(t);
+      t.retenues_cpam=+(retenue+cut).toFixed(2);
       remaining=+(remaining-cut).toFixed(2);
       const note=`Franchise déduite: -${fmt(cut)} (${d.label})`;
       t.notes=[String(t.notes||'').trim(),note].filter(Boolean).join(' | ');
@@ -841,6 +873,7 @@ function normalizeExtractedEntry(raw,fileName,fallbackYear){
     montant,
     remboursement_secu:rb.secu,
     remboursement_mutuelle:rb.mut,
+    retenues_cpam:0,
     statut:normalizeStatut(raw?.statut,montant,rb.secu,rb.mut),
     notes:[String(raw?.notes||'').trim(),fileName?`Document: ${fileName}`:''].filter(Boolean).join(' | '),
     source:'import_ia',
@@ -877,6 +910,7 @@ function mergeEntries(base,incoming,forceRecoupeNote){
   merged.montant_paye=Math.max(+base.montant_paye||0,+incoming.montant_paye||0,+merged.montant||0);
   merged.remboursement_secu=Math.max(+base.remboursement_secu||0,+incoming.remboursement_secu||0);
   merged.remboursement_mutuelle=Math.max(+base.remboursement_mutuelle||0,+incoming.remboursement_mutuelle||0);
+  merged.retenues_cpam=Math.max(entryRetenue(base),entryRetenue(incoming));
   merged.remboursement_complementaire=Math.max(+base.remboursement_complementaire||0,+incoming.remboursement_complementaire||0,+merged.remboursement_mutuelle||0);
 
   merged.praticien=pickBestText(base.praticien,incoming.praticien);
@@ -1117,8 +1151,10 @@ function applyIntegratedSchemaToEntry(entry){
   e.remboursement_secu=+((e.remboursement_secu??0) || 0);
   e.remboursement_complementaire=+((e.remboursement_complementaire??e.remboursement_mutuelle??0) || 0);
   e.remboursement_autres_organismes=+((e.remboursement_autres_organismes??0) || 0);
+  e.retenues_cpam=+((e.retenues_cpam??e.retenue_cpam??e.franchise_medicale??0) || 0);
+  e.franchise_medicale=e.retenues_cpam;
   e.remboursement_total=e.remboursement_secu+e.remboursement_complementaire+e.remboursement_autres_organismes;
-  e.reste_a_charge_reel=Math.max(0,e.depense_reelle-e.remboursement_total);
+  e.reste_a_charge_reel=Math.max(0,e.depense_reelle-e.remboursement_total)+e.retenues_cpam;
   e.taux_remboursement_effectif=e.depense_reelle>0?(e.remboursement_total/e.depense_reelle*100):0;
   e.mutuelle_fonctionne_correctement=e.ecart_vs_contrat==null?null:Math.abs(+e.ecart_vs_contrat||0)<0.01;
   if(!e.categorie)e.categorie='Autre';
@@ -1379,9 +1415,11 @@ function computeMetrics(entries){
   const total=entries.reduce((s,e)=>s+(+e.montant||0),0);
   const secu=entries.reduce((s,e)=>s+(+e.remboursement_secu||0),0);
   const mut=entries.reduce((s,e)=>s+(+e.remboursement_mutuelle||0),0);
-  const rac=total-secu-mut;
+  const retenues=entries.reduce((s,e)=>s+entryRetenue(e),0);
+  const rac_hors=entries.reduce((s,e)=>s+entryRacHorsRetenue(e),0);
+  const rac=rac_hors+retenues;
   const taux=total>0?(secu+mut)/total*100:0;
-  return{total,secu,mut,rac,taux,n:entries.length};
+  return{total,secu,mut,retenues,rac_hors,rac,taux,n:entries.length};
 }
 
 function renderDashboard(){
@@ -1392,8 +1430,8 @@ function renderDashboard(){
   const yr=currentPeriod==='all'?yrNow():currentPeriod;
   const yEntries=ld().filter(e=>e.date&&e.date.startsWith(yr));
   const bycat={};
-  yEntries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0));});
-  const racMois=ld().filter(e=>e.date&&e.date.startsWith(yr+'-'+String(mNow()).padStart(2,'0'))).reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
+  yEntries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+entryRacTotal(e);});
+  const racMois=ld().filter(e=>e.date&&e.date.startsWith(yr+'-'+String(mNow()).padStart(2,'0'))).reduce((s,e)=>s+entryRacTotal(e),0);
   let alerts='';
   if(racMois>(cfg.seuil_rac_mensuel||200))alerts+=`<div class="alert alert-warn">RAC ce mois : ${fmt(racMois)} — seuil de ${fmt(cfg.seuil_rac_mensuel||200)} dépassé</div>`;
   (cfg.plafonds||[]).forEach(p=>{const c=bycat[p.categorie]||0;const pct=p.montant>0?c/p.montant*100:0;if(pct>=90)alerts+=`<div class="alert alert-danger">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommé (${fmt(c)}/${fmt(p.montant)})</div>`;else if(pct>=70)alerts+=`<div class="alert alert-warn">Plafond ${p.categorie} : ${pct.toFixed(0)}% consommé</div>`;});
@@ -1406,7 +1444,7 @@ function renderDashboard(){
     <div class="mc"><div class="mc-label">Total dépensé</div><div class="mc-val">${fmts(m.total)}</div><div class="mc-sub">${m.n} soin${m.n>1?'s':''}</div></div>
     <div class="mc"><div class="mc-label">Remb. Sécu</div><div class="mc-val pos">${fmts(m.secu)}</div><div class="mc-sub">${m.total>0?(m.secu/m.total*100).toFixed(0):0}%</div></div>
     <div class="mc"><div class="mc-label">Remb. mutuelle</div><div class="mc-val pos">${fmts(m.mut)}</div><div class="mc-sub">${m.total>0?(m.mut/m.total*100).toFixed(0):0}%</div></div>
-    <div class="mc"><div class="mc-label">Reste  charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)}</div><div class="mc-sub">Couv. ${m.taux.toFixed(0)}%</div></div>`;
+    <div class="mc"><div class="mc-label">Reste  charge</div><div class="mc-val ${m.rac>300?'warn':''}">${fmts(m.rac)}</div><div class="mc-sub">Hors retenues ${fmts(m.rac_hors)} · Retenues ${fmts(m.retenues)}</div></div>`;
   renderDbTab('list');
 }
 
@@ -1532,7 +1570,7 @@ function renderDbTab(tab){
     const selectedCount=[...dbSelectedIds].length;
     const allVisibleSelected=dbVisibleIds.length>0&&dbVisibleIds.every(id=>dbSelectedIds.has(Number(id)));
     const rows=visibleEntries.map(e=>{
-      const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);
+      const rac=entryRacTotal(e);
       const si=STATUTS.indexOf(e.statut||'En attente Sécu');
       return`<tr><td><input type="checkbox" ${dbSelectedIds.has(Number(e.id))?'checked':''} onchange="toggleDbEntrySelection(${e.id},this.checked)" aria-label="Sélectionner la ligne ${e.id}"></td><td style="color:var(--text3)">${e.date||'?'}</td><td><span style="font-size:11px;font-weight:500">${e.praticien||'?'}</span></td><td><span class="tag" style="background:${CAT_COLORS[e.categorie]||'#888'}22;color:${CAT_COLORS[e.categorie]||'#888'}">${e.categorie||'Autre'}</span></td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:var(--accent)">${fmt((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))}</td><td class="r mono" style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td><td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openEntryDetail(${e.id})">Détail</button><button class="btn btn-danger btn-sm" onclick="deleteEntryById(${e.id})">Suppr.</button></div></td></tr>`;
     }).join('');
@@ -1545,11 +1583,11 @@ function renderDbTab(tab){
     setTimeout(()=>{charts['db-main']=new Chart(document.getElementById('c-db-main'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'Dépensé',data:byM.map(m=>+m.d.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3},{label:'Remboursé',data:byM.map(m=>+m.r.toFixed(2)),backgroundColor:'#1D9E7544',borderColor:'#1D9E75',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
   }
   if(tab==='cats'){
-    const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';if(!bycat[k])bycat[k]={t:0,s:0,mu:0};bycat[k].t+=(+e.montant||0);bycat[k].s+=(+e.remboursement_secu||0);bycat[k].mu+=(+e.remboursement_mutuelle||0);});
+    const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';if(!bycat[k])bycat[k]={t:0,s:0,mu:0,ret:0};bycat[k].t+=(+e.montant||0);bycat[k].s+=(+e.remboursement_secu||0);bycat[k].mu+=(+e.remboursement_mutuelle||0);bycat[k].ret+=entryRetenue(e);});
     const grand=Object.values(bycat).reduce((s,v)=>s+v.t,0);
     const html=Object.entries(bycat).sort((a,b)=>b[1].t-a[1].t).map(([cat,v])=>{
-      const pct=grand>0?v.t/grand*100:0;const rac=v.t-v.s-v.mu;const col=CAT_COLORS[cat]||'#888';
-      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>Sécu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
+      const pct=grand>0?v.t/grand*100:0;const rac=v.t-v.s-v.mu+v.ret;const col=CAT_COLORS[cat]||'#888';
+      return`<div style="margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--text)">${cat}</span><span style="font-size:12px;font-variant-numeric:tabular-nums">${fmt(v.t)}</span></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${col}"></div></div><div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text3)"><span>Sécu <span style="color:var(--accent)">${fmt(v.s)}</span></span><span>Mutuelle <span style="color:var(--accent)">${fmt(v.mu)}</span></span><span>Retenues <span style="color:var(--warn)">${fmt(v.ret)}</span></span><span>RAC <span style="color:${rac>20?'var(--warn)':'var(--text3)'}">${fmt(rac)}</span></span></div></div>`;
     }).join('');
     document.getElementById('db-tab-cats').innerHTML=html||'<div class="empty-state">Aucune donnée</div>';
   }
@@ -1592,23 +1630,28 @@ Règles:
 async function handleFiles(fileList){
   const files=Array.from(fileList||[]).filter(Boolean);
   if(!files.length)return;
+  const skipped=files.filter(f=>V5_EXCLUDED_IMPORTS[normalizedFileName(f.name)]);
+  const accepted=files.filter(f=>!V5_EXCLUDED_IMPORTS[normalizedFileName(f.name)]);
   document.getElementById('aiProc').classList.add('on');
   document.getElementById('aiResult').classList.remove('on');
-  document.querySelector('#aiProc span').textContent=`ChatGPT analyse ${files.length} document${files.length>1?'s':''}…`;
+  document.querySelector('#aiProc span').textContent=`ChatGPT analyse ${accepted.length} document${accepted.length>1?'s':''}…`;
   try{
     const ctContent=lct().map(c=>c.nom+': '+c.content.slice(0,500)).join('\n\n');
     let extracted=[];
-    for(const file of files){
+    for(const file of accepted){
       const rows=await analyzeSingleDoc(file,ctContent);
       extracted=extracted.concat(rows);
     }
+    if(!accepted.length)throw new Error('Aucun document intégrable: les fichiers déposés sont marqués hors périmètre dans le modèle V5.');
     pendingEntries=dedupeEntries(extracted.map(applyIntegratedSchemaToEntry)).filter(e=>isCoverageYear(String(e.date||e.date_soin||'').slice(0,4)));
     if(!pendingEntries.length)throw new Error(`Aucune donnée exploitable détectée (${MIN_COVERAGE_YEAR} → ${new Date().getFullYear()}).`);
     const years=[...new Set(pendingEntries.map(e=>e.date.slice(0,4)))].sort();
     const preview=pendingEntries.slice(0,8).map(e=>`<div class="ai-field"><span class="ai-field-label">${e.date} ⬢ ${e.praticien}</span><span style="font-weight:500">${fmt(e.montant)}</span></div>`).join('');
+    const skippedInfo=skipped.length?`<div style="font-size:11px;color:var(--warn)">Ignorés (non intégrés V5): ${skipped.map(f=>`${f.name}`).join(', ')}</div>`:'';
     document.getElementById('aiFields').innerHTML=`
       <div class="ai-field"><span class="ai-field-label">Lignes extraites</span><span style="font-weight:700">${pendingEntries.length}</span></div>
       <div class="ai-field"><span class="ai-field-label">Période couverte</span><span style="font-weight:500">${years[0]} → ${years[years.length-1]}</span></div>
+      ${skippedInfo}
       ${preview}
       ${pendingEntries.length>8?`<div style="font-size:11px;color:var(--text3)">+${pendingEntries.length-8} lignes supplmentaires</div>`:''}
     `;
@@ -1724,7 +1767,7 @@ function rComparaison(){
   if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée disponible</div>';return;}
   const byY={};years.forEach(y=>{byY[y]=entries.filter(e=>e.date&&e.date.startsWith(y));});
   const rows=years.map((y,i)=>{
-    const s=computeMetrics(byY[y]);const rac=s.total-s.secu-s.mut;const prev=years[i+1];const d=prev?delta(s.total,computeMetrics(byY[prev]).total):null;
+    const s=computeMetrics(byY[y]);const rac=s.rac;const prev=years[i+1];const d=prev?delta(s.total,computeMetrics(byY[prev]).total):null;
     return`<tr><td style="font-weight:500">${y}</td><td class="r mono">${fmt(s.total)}</td><td class="r mono" style="color:var(--accent)">${fmt(s.secu)}</td><td class="r mono" style="color:var(--accent)">${fmt(s.mut)}</td><td class="r mono" style="color:${rac>300?'var(--warn)':'var(--text)'}">${fmt(rac)}</td><td class="r">${s.taux.toFixed(0)}%</td><td class="r">${deltaHtml(d)}</td></tr>`;
   }).join('');
   el.innerHTML=`<div class="card"><div class="card-title">Comparaison annuelle</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Année</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th><th class="r">vs N-1</th></tr></thead><tbody>${rows}</tbody></table></div></div>
@@ -1733,7 +1776,7 @@ function rComparaison(){
   setTimeout(()=>{
     if(charts['comp']){charts['comp'].destroy();}
     const yrS=[...years].reverse();
-    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'Dépensé',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.total-s.secu-s.mut).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
+    charts['comp']=new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:yrS,datasets:[{label:'Dépensé',data:yrS.map(y=>+computeMetrics(byY[y]).total.toFixed(2)),backgroundColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]+'88'),borderColor:yrS.map((_,i)=>YR_COLORS[i%YR_COLORS.length]),borderWidth:1,borderRadius:4},{label:'RAC',data:yrS.map(y=>{const s=computeMetrics(byY[y]);return+(s.rac).toFixed(2);}),backgroundColor:'rgba(192,57,43,.15)',borderColor:'#C0392B',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
     if(charts['comp-cat']){charts['comp-cat'].destroy();}
     const catDS=CATS.map(cat=>({label:cat,data:yrS.map(y=>+(byY[y].filter(e=>e.categorie===cat).reduce((s,e)=>s+(+e.montant||0),0)).toFixed(2)),backgroundColor:CAT_COLORS[cat]+'AA',borderRadius:2})).filter(d=>d.data.some(v=>v>0));
     charts['comp-cat']=new Chart(document.getElementById('c-comp-cat'),{type:'bar',data:{labels:yrS,datasets:catDS},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},color:'#9E9B96',boxWidth:10,padding:6}}},scales:{x:{stacked:true,ticks:{color:'#9E9B96',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{stacked:true,ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});
@@ -1745,22 +1788,22 @@ function rMensuel(){
   if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
   const refY=anPeriod==='all'?years[0]:anPeriod;
   const compY=years[years.indexOf(refY)+1]||null;
-  const build=y=>{const m=Array(12).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const mi=parseInt(e.date.split('-')[1])-1;if(mi>=0&&mi<12){m[mi].t+=(+e.montant||0);m[mi].s+=(+e.remboursement_secu||0);m[mi].mu+=(+e.remboursement_mutuelle||0);}});return m;};
+  const build=y=>{const m=Array(12).fill(0).map(()=>({t:0,s:0,mu:0,ret:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const mi=parseInt(e.date.split('-')[1])-1;if(mi>=0&&mi<12){m[mi].t+=(+e.montant||0);m[mi].s+=(+e.remboursement_secu||0);m[mi].mu+=(+e.remboursement_mutuelle||0);m[mi].ret+=entryRetenue(e);}});return m;};
   const cur=build(refY);const prev=compY?build(compY):null;
-  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'?'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'?'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'?'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'?'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'?'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=MONTHS.map((m,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu+c.ret;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${m}</td><td class="r mono">${c.t>0?fmt(c.t):'?'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'?'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'?'}</td><td class="r mono" style="color:${rac>50?'var(--warn)':'var(--text3)'}">${c.t>0?fmt(rac):'?'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'?'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map((y,i)=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('mensuel')">${y}</button>`).join('')}</div>
   <div class="card"><div class="card-title">Synthse mensuelle ${refY}${compY?' vs '+compY:''}</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th>${compY?`<th class="r">${compY}</th><th class="r">0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div></div>
   <div class="card"><div class="card-title">Dpenses mensuelles${compY?' ? '+refY+' / '+compY:''}</div><div class="chart-wrap" style="height:240px"><canvas id="c-mens" role="img" aria-label="Dpenses mensuelles">.</canvas></div></div>`;
-  setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
+  setTimeout(()=>{if(charts['mens']){charts['mens'].destroy();}const ds=[{label:refY,data:cur.map(m=>+m.t.toFixed(2)),backgroundColor:'#1A4D3A44',borderColor:'#1A4D3A',borderWidth:1,borderRadius:3,type:'bar'},{label:'RAC '+refY,data:cur.map(m=>+(m.t-m.s-m.mu+m.ret).toFixed(2)),borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:1.5,type:'line',tension:.3,pointRadius:2,pointBackgroundColor:'#C0392B'}];if(prev)ds.splice(1,0,{label:compY,data:prev.map(m=>+m.t.toFixed(2)),backgroundColor:'#C8A96E44',borderColor:'#C8A96E',borderWidth:1,borderRadius:3,type:'bar'});charts['mens']=new Chart(document.getElementById('c-mens'),{type:'bar',data:{labels:MONTHS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9E9B96',font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9E9B96',font:{size:10},callback:v=>v+'€'},grid:{color:'rgba(0,0,0,.04)'}}}}});},30);
 }
 
 function rTrimestriel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-trimestriel');
   if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
   const refY=anPeriod==='all'?years[0]:anPeriod;const compY=years[years.indexOf(refY)+1]||null;
-  const buildQ=y=>{const q=Array(4).fill(0).map(()=>({t:0,s:0,mu:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const m=parseInt(e.date.split('-')[1])-1;const qi=Math.floor(m/3);if(qi>=0&&qi<4){q[qi].t+=(+e.montant||0);q[qi].s+=(+e.remboursement_secu||0);q[qi].mu+=(+e.remboursement_mutuelle||0);}});return q;};
+  const buildQ=y=>{const q=Array(4).fill(0).map(()=>({t:0,s:0,mu:0,ret:0}));entries.filter(e=>e.date&&e.date.startsWith(y)).forEach(e=>{const m=parseInt(e.date.split('-')[1])-1;const qi=Math.floor(m/3);if(qi>=0&&qi<4){q[qi].t+=(+e.montant||0);q[qi].s+=(+e.remboursement_secu||0);q[qi].mu+=(+e.remboursement_mutuelle||0);q[qi].ret+=entryRetenue(e);}});return q;};
   const cur=buildQ(refY);const prev=compY?buildQ(compY):null;
-  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'?'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'?'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'?'}</td><td class="r mono">${c.t>0?fmt(rac):'?'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'?'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'?'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
+  const rows=QQ.map((q,i)=>{const c=cur[i];const rac=c.t-c.s-c.mu+c.ret;const taux=c.t>0?(c.s+c.mu)/c.t*100:0;const p=prev?prev[i]:null;const d=p&&p.t>0?delta(c.t,p.t):null;return`<tr><td style="font-weight:500">${q}</td><td class="r mono">${c.t>0?fmt(c.t):'?'}</td><td class="r mono" style="color:var(--accent)">${c.s>0?fmt(c.s):'?'}</td><td class="r mono" style="color:var(--accent)">${c.mu>0?fmt(c.mu):'?'}</td><td class="r mono">${c.t>0?fmt(rac):'?'}</td><td class="r">${c.t>0?taux.toFixed(0)+'%':'?'}</td>${compY?`<td class="r mono" style="color:var(--text3)">${p&&p.t>0?fmt(p.t):'?'}</td><td class="r">${deltaHtml(d)}</td>`:''}</tr>`;}).join('');
   el.innerHTML=`<div class="period-sel" style="margin-bottom:1rem">${years.map(y=>`<button class="pbtn ${y===refY?'active':''}" onclick="setAnPeriod('${y}',this);switchAnalyse('trimestriel')">${y}</button>`).join('')}</div>
   <div class="card"><div class="card-title">Synthse trimestrielle ${refY}${compY?' vs '+compY:''}</div><table class="tbl"><thead><tr><th>Trim.</th><th class="r">Dépensé</th><th class="r">Sécu</th><th class="r">Mutuelle</th><th class="r">RAC</th><th class="r">Couv.</th>${compY?`<th class="r">${compY}</th><th class="r">0vol.</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
   <div class="card"><div class="card-title">Dépenses trimestrielles</div><div class="chart-wrap" style="height:220px"><canvas id="c-trim" role="img" aria-label="Dépenses trimestrielles">.</canvas></div></div>`;
@@ -1770,7 +1813,7 @@ function rTrimestriel(){
 function rAnnuel(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('an-annuel');
   if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
-  const summaries=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const bycat={};ye.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+(+e.montant||0);});const top=Object.entries(bycat).sort((a,b)=>b[1]-a[1])[0];return{...s,year:y,rac:s.total-s.secu-s.mut,top};});
+  const summaries=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const bycat={};ye.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+(+e.montant||0);});const top=Object.entries(bycat).sort((a,b)=>b[1]-a[1])[0];return{...s,year:y,rac:s.rac,top};});
   const best=summaries.reduce((a,b)=>b.rac<a.rac?b:a,summaries[0]);
   el.innerHTML=summaries.map((s,i)=>{const prev=summaries[i+1];const d=prev?delta(s.total,prev.total):null;
     return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.875rem"><div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">${s.year}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.n} soins${s.top?`  principal : ${s.top[0]}`:''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">${d!==null?deltaHtml(d)+' vs '+(summaries[i+1].year||''):''}${s===best?'<span class="tag" style="background:var(--accent-light);color:var(--accent)">Meilleur RAC</span>':''}</div></div><div class="metrics-grid" style="margin-bottom:.75rem"><div class="mc"><div class="mc-label">Dépensé</div><div class="mc-val">${fmts(s.total)}</div></div><div class="mc"><div class="mc-label">Sécu</div><div class="mc-val pos">${fmts(s.secu)}</div></div><div class="mc"><div class="mc-label">Mutuelle</div><div class="mc-val pos">${fmts(s.mut)}</div></div><div class="mc"><div class="mc-label">RAC</div><div class="mc-val ${s.rac>300?'warn':''}">${fmts(s.rac)}</div></div></div><div class="pbar-wrap"><div class="pbar" style="width:${Math.min(100,s.taux).toFixed(0)}%;background:var(--accent)"></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Taux de couverture : ${s.taux.toFixed(0)}%</div></div>`;}).join('');
@@ -1778,9 +1821,9 @@ function rAnnuel(){
 
 function rPratStats(){
   const entries=ld();const el=document.getElementById('an-praticiens-stats');
-  const byP={};entries.forEach(e=>{const k=e.praticien||'Inconnu';if(!byP[k])byP[k]={t:0,s:0,mu:0,n:0,cat:e.categorie||'Autre',dates:[]};byP[k].t+=(+e.montant||0);byP[k].s+=(+e.remboursement_secu||0);byP[k].mu+=(+e.remboursement_mutuelle||0);byP[k].n++;if(e.date)byP[k].dates.push(e.date);});
+  const byP={};entries.forEach(e=>{const k=e.praticien||'Inconnu';if(!byP[k])byP[k]={t:0,s:0,mu:0,ret:0,n:0,cat:e.categorie||'Autre',dates:[]};byP[k].t+=(+e.montant||0);byP[k].s+=(+e.remboursement_secu||0);byP[k].mu+=(+e.remboursement_mutuelle||0);byP[k].ret+=entryRetenue(e);byP[k].n++;if(e.date)byP[k].dates.push(e.date);});
   const sorted=Object.keys(byP).sort((a,b)=>byP[b].t-byP[a].t);
-  const rows=sorted.map((p,i)=>{const v=byP[p];const rac=v.t-v.s-v.mu;const taux=v.t>0?(v.s+v.mu)/v.t*100:0;const [abg,atx]=avCol(i);const last=v.dates.sort().pop();
+  const rows=sorted.map((p,i)=>{const v=byP[p];const rac=v.t-v.s-v.mu+v.ret;const taux=v.t>0?(v.s+v.mu)/v.t*100:0;const [abg,atx]=avCol(i);const last=v.dates.sort().pop();
     return`<div class="data-row"><div class="avatar" style="background:${abg};color:${atx}">${initials(p)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p}</div><div style="font-size:11px;color:var(--text3)">${v.n} visite${v.n>1?'s':''}${last?'  dernire '+last:''}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">${fmt(v.t)}</div><div style="font-size:11px;color:${rac>50?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}  ${taux.toFixed(0)}%</div></div></div>`;}).join('');
   el.innerHTML=`<div class="card"><div class="card-title">Dépenses par praticien</div>${rows||'<div class="empty-state">Aucune donnée</div>'}</div>`;
 }
@@ -1788,8 +1831,8 @@ function rPratStats(){
 function rRemboursements(){
   const entries=ld();const el=document.getElementById('an-remboursements');
   const pending=entries.filter(e=>e.statut!=='Soldé').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const montantAtt=pending.reduce((s,e)=>s+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0)),0);
-  const rows=pending.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente Sécu');return`<tr><td style="color:var(--text3)">${e.date||'?'}</td><td>${e.praticien||'?'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td></tr>`;}).join('');
+  const montantAtt=pending.reduce((s,e)=>s+entryRacTotal(e),0);
+  const rows=pending.map(e=>{const rac=entryRacTotal(e);const si=STATUTS.indexOf(e.statut||'En attente Sécu');return`<tr><td style="color:var(--text3)">${e.date||'?'}</td><td>${e.praticien||'?'}</td><td class="r mono">${fmt(+e.montant||0)}</td><td class="r mono" style="color:${rac>0?'var(--warn)':'var(--accent)'}">${fmt(rac)}</td><td><span class="status-pill ${STAT_CLS[si>=0?si:0]}" onclick="cycleStatutById(${e.id})">${e.statut||'En attente Sécu'}</span></td></tr>`;}).join('');
   el.innerHTML=`<div class="metrics-grid"><div class="mc"><div class="mc-label">En attente</div><div class="mc-val warn">${pending.length}</div></div><div class="mc"><div class="mc-label">Montant att.</div><div class="mc-val ${montantAtt>100?'warn':''}">${fmt(montantAtt)}</div></div><div class="mc"><div class="mc-label">Solds</div><div class="mc-val pos">${entries.filter(e=>e.statut==='Sold').length}</div></div></div>
   <div class="card"><div class="card-title">En attente de remboursement</div>${pending.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Praticien</th><th class="r">Montant</th><th class="r">RAC</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table></div><div style="font-size:11px;color:var(--text3);margin-top:8px">Cliquez sur le statut pour le faire avancer</div>`:'<div class="empty-state">Aucun remboursement en attente</div>'}</div>`;
 }
@@ -1812,7 +1855,7 @@ function doSearch(q){
   let res=entries.filter(e=>(!term||(e.praticien||'').toLowerCase().includes(term)||(e.acte||'').toLowerCase().includes(term)||(e.categorie||'').toLowerCase().includes(term)||(e.notes||'').toLowerCase().includes(term)||(e.date||'').includes(term))&&(!searchCatFilter||e.categorie===searchCatFilter)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const el=document.getElementById('srch-results');if(!el)return;
   if(!res.length){el.innerHTML='<div class="empty-state">Aucun résultat</div>';return;}
-  const rows=res.slice(0,50).map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const si=STATUTS.indexOf(e.statut||'En attente Sécu');
+  const rows=res.slice(0,50).map(e=>{const rac=entryRacTotal(e);const si=STATUTS.indexOf(e.statut||'En attente Sécu');
     return`<div class="data-row" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">${e.praticien||'?'}</span><span style="font-size:11px;color:var(--text3)">${e.date||''}</span><span class="status-pill ${STAT_CLS[si>=0?si:0]}">${e.statut||'En attente Sécu'}</span></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${e.acte||''} ${e.notes?' '+e.notes:''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-weight:500;font-variant-numeric:tabular-nums">${fmt(+e.montant||0)}</div><div style="font-size:11px;color:${rac>0?'var(--warn)':'var(--accent)'}">RAC ${fmt(rac)}</div></div></div>`;}).join('');
   el.innerHTML=`<div class="card"><div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">${res.length} résultat${res.length>1?'s':''}</div>${rows}</div>`;
 }
@@ -2110,7 +2153,7 @@ function renderContracts(){
 function renderPlafonds(){
   const cfg=lcfg();const el=document.getElementById('plafonds-list');const sr=document.getElementById('seuil-rac');if(sr)sr.value=cfg.seuil_rac_mensuel||200;
   const yr=yrNow();const entries=ld().filter(e=>e.date&&e.date.startsWith(yr));
-  const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+((+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0));});
+  const bycat={};entries.forEach(e=>{const k=e.categorie||'Autre';bycat[k]=(bycat[k]||0)+entryRacTotal(e);});
   if(!(cfg.plafonds||[]).length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">Aucun plafond configuré</div>';return;}
   el.innerHTML=(cfg.plafonds||[]).map((p,i)=>{const c=bycat[p.categorie]||0;const pct=Math.min(100,p.montant>0?c/p.montant*100:0);const fc=pct>=90?'#C0392B':pct>=70?'#B7600A':'#1A4D3A';
     return`<div style="margin-bottom:1rem"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:500">${p.categorie}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--text3)">${fmt(c)} / ${fmt(p.montant)}</span><button class="btn btn-danger btn-sm" style="padding:3px 8px" onclick="delPlafond(${i})">×</button></div></div><div class="pbar-wrap"><div class="pbar" style="width:${pct.toFixed(1)}%;background:${fc}"></div></div><div style="font-size:11px;color:var(--text3);margin-top:3px">${pct.toFixed(0)}% — reste ${fmt(Math.max(0,p.montant-c))}</div></div>`;}).join('');
@@ -2182,8 +2225,8 @@ function exportCSV(){
   const entries=ld();const yr=document.getElementById('exp-yr').value;const cat=document.getElementById('exp-cat').value;const stat=document.getElementById('exp-stat').value;
   let data=entries;if(yr!=='all')data=data.filter(e=>e.date&&e.date.startsWith(yr));if(cat)data=data.filter(e=>e.categorie===cat);if(stat)data=data.filter(e=>(e.statut||'En attente Sécu')===stat);
   data=data.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const headers=['Date','Praticien','Catégorie','Acte','Montant (€)','Remb. Sécu (€)','Remb. Mutuelle (€)','RAC (€)','Taux couverture (%)','Statut','Notes','Source'];
-  const rows=data.map(e=>{const rac=(+e.montant||0)-(+e.remboursement_secu||0)-(+e.remboursement_mutuelle||0);const taux=(+e.montant||0)>0?((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))/(+e.montant||0)*100:0;return[e.date||'',e.praticien||'',e.categorie||'',e.acte||'',(+e.montant||0).toFixed(2),(+e.remboursement_secu||0).toFixed(2),(+e.remboursement_mutuelle||0).toFixed(2),rac.toFixed(2),taux.toFixed(0),e.statut||'',e.notes||'',e.source||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';');});
+  const headers=['Date','Praticien','Catégorie','Acte','Montant engagé (€)','Remb. CPAM (€)','Remb. CS (€)','Retenues CPAM (€)','RAC hors retenues (€)','RAC total (€)','Taux couverture (%)','Statut','Notes','Source'];
+  const rows=data.map(e=>{const racH=entryRacHorsRetenue(e);const racT=entryRacTotal(e);const taux=(+e.montant||0)>0?((+e.remboursement_secu||0)+(+e.remboursement_mutuelle||0))/(+e.montant||0)*100:0;return[e.date||'',e.praticien||'',e.categorie||'',e.acte||'',(+e.montant||0).toFixed(2),(+e.remboursement_secu||0).toFixed(2),(+e.remboursement_mutuelle||0).toFixed(2),entryRetenue(e).toFixed(2),racH.toFixed(2),racT.toFixed(2),taux.toFixed(0),e.statut||'',e.notes||'',e.source||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';');});
   const csv='\uFEFF'+headers.join(';')+'\n'+rows.join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`sante_${yr==='all'?'tout':yr}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);
   const ok=document.getElementById('exp-ok');ok.textContent=`${data.length} ligne${data.length>1?'s':''} exporte${data.length>1?'s':''}`;ok.style.display='flex';setTimeout(()=>ok.style.display='none',3000);
@@ -2462,7 +2505,7 @@ function resetAllData(){
 function renderExpSummary(){
   const entries=ld();const years=getYears(entries);const el=document.getElementById('exp-annual-table');
   if(!years.length){el.innerHTML='<div class="empty-state">Aucune donnée</div>';return;}
-  const annual=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.total-s.secu-s.mut;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('');
+  const annual=years.map(y=>{const ye=entries.filter(e=>e.date&&e.date.startsWith(y));const s=computeMetrics(ye);const rac=s.rac;return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;font-size:13px"><span style="font-weight:500;min-width:50px">${y}</span><span style="color:var(--text3)">${ye.length} soins</span><span style="font-variant-numeric:tabular-nums">${fmt(s.total)}</span><span style="color:var(--accent);font-variant-numeric:tabular-nums">Remb. ${fmt(s.secu+s.mut)}</span><span style="color:${rac>300?'var(--warn)':'var(--text3)'};font-variant-numeric:tabular-nums">RAC ${fmt(rac)}</span><span style="color:var(--text3)">${s.taux.toFixed(0)}% couv.</span></div>`;}).join('');
   let missingTotal=0;
   entries.forEach(e=>{missingTotal+=validateEntryMinimalFields(applyIntegratedSchemaToEntry(e)).length;});
   const diag=`<div style="margin-top:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--text2)">Schéma intégré: ${INTEGRATED_SCHEMA.champs_minimaux_jugement_mutuelle.length} champs minimaux de contrôle. Données manquantes détectées (somme sur les lignes): <b>${missingTotal}</b>.</div>`;
