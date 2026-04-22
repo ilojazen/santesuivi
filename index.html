@@ -462,6 +462,7 @@ const PK='praticiens_v1';
 const CFG='config_santesuivi_v1';
 const TPK='tiers_payant_v1';
 const CTK='contracts_v1';
+const MIG_V5_RECALC_DONE='santesuivi_mig_v5_recalc_done';
 
 const CATS=['Médecin généraliste','Spécialiste','Dentiste','Pharmacie','Kiné / ostéo','Optique','Hospitalisation','Autre'];
 const STATUTS=['En attente Sécu','Remboursé Sécu','En attente mutuelle','Soldé'];
@@ -1134,6 +1135,60 @@ function normalizeLoadedEntries(entries){
   });
 }
 
+function extractDocNamesFromEntry(e){
+  const names=[];
+  const fromSource=String(e?.source_document||'').trim();
+  if(fromSource)names.push(fromSource);
+  const notes=String(e?.notes||'');
+  const re=/Document:\s*([^|]+)/gi;
+  let m;
+  while((m=re.exec(notes))){
+    const n=String(m[1]||'').trim();
+    if(n)names.push(n);
+  }
+  return [...new Set(names.map(normalizedFileName).filter(Boolean))];
+}
+
+function extractRetentionFromNotes(e){
+  const notes=String(e?.notes||'');
+  const re=/Franchise déduite:\s*-\s*([0-9]+(?:[.,][0-9]+)?)/gi;
+  let sum=0;let m;
+  while((m=re.exec(notes))){
+    sum+=parseAmount(m[1]);
+  }
+  return +sum.toFixed(2);
+}
+
+function recalcEntryV5(e){
+  const out={...e};
+  out.date=normalizeDate(out.date||out.date_soin,String((out.date||out.date_soin||'').slice(0,4)));
+  out.categorie=normalizeCategory(out.categorie);
+  out.praticien=fixMojibakeText(String(out.praticien||'').trim())||'Inconnu';
+  out.acte=fixMojibakeText(String(out.acte||'').trim())||'Acte médical';
+  out.montant=parseAmount(out.montant??out.depense_reelle??out.montant_paye);
+  const docNames=extractDocNamesFromEntry(out);
+  const bestDoc=docNames[0]||'';
+  out.source_type=inferSourceType(out,bestDoc);
+  const rb=normalizeReimbursementBySource(out.source_type,out.montant,parseAmount(out.remboursement_secu),parseAmount(out.remboursement_mutuelle));
+  out.remboursement_secu=rb.secu;
+  out.remboursement_mutuelle=rb.mut;
+  const notesRet=extractRetentionFromNotes(out);
+  out.retenues_cpam=Math.max(entryRetenue(out),notesRet);
+  out.statut=normalizeStatut(out.statut,out.montant,out.remboursement_secu,out.remboursement_mutuelle);
+  return applyIntegratedSchemaToEntry(out);
+}
+
+function applyV5HistoricalRecalc(entries){
+  const normalized=normalizeLoadedEntries(entries||[]);
+  const kept=normalized.filter(e=>{
+    const docs=extractDocNamesFromEntry(e);
+    return !docs.some(d=>Object.prototype.hasOwnProperty.call(V5_EXCLUDED_IMPORTS,d));
+  });
+  const recalced=kept.map(recalcEntryV5).filter(e=>(+e.montant||0)>0&&!!e.date);
+  const deduped=dedupeEntries(recalced);
+  return repairRetentionArtifacts(deduped);
+}
+
 function createSchemaEntryDefaults(){
   const out={};
   Object.values(INTEGRATED_SCHEMA.champs).forEach(arr=>arr.forEach(k=>{if(!(k in out))out[k]=null;}));
@@ -1183,9 +1238,9 @@ function normalizeGenericDeep(v){
 
 function normalizeAndPersistStorage(){
   try{
-    const normalized=dedupeEntries(normalizeLoadedEntries(ld()));
-    const repaired=repairRetentionArtifacts(normalized);
-    localStorage.setItem(SK,JSON.stringify(repaired));
+    const migrated=applyV5HistoricalRecalc(ld());
+    localStorage.setItem(SK,JSON.stringify(migrated));
+    localStorage.setItem(MIG_V5_RECALC_DONE,'1');
   }catch{}
   try{localStorage.setItem(PK,JSON.stringify(normalizeGenericDeep(lp())));}catch{}
   try{localStorage.setItem(CFG,JSON.stringify(normalizeGenericDeep(lcfg())));}catch{}
