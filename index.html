@@ -463,6 +463,7 @@ const CFG='config_santesuivi_v1';
 const TPK='tiers_payant_v1';
 const CTK='contracts_v1';
 const MIG_V5_RECALC_DONE='santesuivi_mig_v5_recalc_done';
+const V5_SEED_IMPORTED='santesuivi_v5_seed_imported';
 
 const CATS=['Médecin généraliste','Spécialiste','Dentiste','Pharmacie','Kiné / ostéo','Optique','Hospitalisation','Autre'];
 const STATUTS=['En attente Sécu','Remboursé Sécu','En attente mutuelle','Soldé'];
@@ -1189,6 +1190,21 @@ function applyV5HistoricalRecalc(entries){
   return repairRetentionArtifacts(deduped);
 }
 
+async function maybeSeedFromV5Snapshot(){
+  const existing=ld();
+  if(existing.length>0)return;
+  if(localStorage.getItem(V5_SEED_IMPORTED)==='1')return;
+  try{
+    const resp=await fetch('./v5_seed_entries.json',{cache:'no-cache'});
+    if(!resp.ok)return;
+    const seed=await resp.json();
+    if(!Array.isArray(seed)||!seed.length)return;
+    const prepared=applyV5HistoricalRecalc(seed);
+    sd(prepared);
+    localStorage.setItem(V5_SEED_IMPORTED,'1');
+  }catch{}
+}
+
 function createSchemaEntryDefaults(){
   const out={};
   Object.values(INTEGRATED_SCHEMA.champs).forEach(arr=>arr.forEach(k=>{if(!(k in out))out[k]=null;}));
@@ -1391,7 +1407,8 @@ let tpOriginalFiles=[];
 // ============================================================
 // INIT
 // ============================================================
-function init(){
+async function init(){
+  await maybeSeedFromV5Snapshot();
   setupRealtimeSync();
   startUiTextAutoNormalize();
   normalizeCatalogs();
